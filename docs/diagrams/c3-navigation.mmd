@@ -1,0 +1,18 @@
+flowchart TD
+  L["Log in"] <--> AC["Activate account"]
+  L -->|student| B["Find projects<br/>(search + filters)"]
+  L -->|teacher| T["Approvals & progress"]
+  L -->|principal| M["Students & teachers"]
+  L -->|admin| S["Schools"]
+  B --> D["Project details"]
+  D -->|"not a member"| J["Join as participant /<br/>volunteer / organizer"]
+  D -->|"creator"| RQ["Accept / reject requests"]
+  B <--> N["Create project"]
+  B <--> MY["My projects"]
+  B <--> CR["My CAS record<br/>(print / PDF)"]
+  MY --> D
+  N -->|"sent for approval"| MY
+  T --> D
+  T --> TA["Approve / reject /<br/>start / complete / deadline"]
+  M --> MA["Add or remove<br/>student / teacher"]
+  S --> SA["Add / remove school,<br/>assign principal"]

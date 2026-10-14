@@ -1,0 +1,20 @@
+flowchart TD
+  S(["Student clicks 'Join as ROLE'"]) --> R1{"ROLE is participant,<br/>volunteer or organizer?"}
+  R1 -- no --> E1["400 Choose a valid role"]
+  R1 -- yes --> R2{"Own school OR<br/>project is interschool?"}
+  R2 -- no --> E2["404 Not found"]
+  R2 -- yes --> R3{"Status pending<br/>or rejected?"}
+  R3 -- yes --> E2
+  R3 -- no --> R3b{"Status approved<br/>or ongoing?"}
+  R3b -- no --> E3["409 Not open for sign-ups"]
+  R3b -- yes --> R4{"Student is<br/>the creator?"}
+  R4 -- yes --> E4["409 You created this project"]
+  R4 -- no --> R5{"Already has a<br/>request?"}
+  R5 -- yes --> E5["409 Duplicate request"]
+  R5 -- no --> R6{"today > deadline?"}
+  R6 -- yes --> E6["409 Deadline passed"]
+  R6 -- no --> R7{"accepted[ROLE] >=<br/>capacity[ROLE]?"}
+  R7 -- yes --> E7["409 No places left"]
+  R7 -- no --> R8{"Dates overlap any<br/>accepted/created project?"}
+  R8 -- yes --> E8["409 Dates clash with TITLE"]
+  R8 -- no --> OK(["Save request as 'pending' → 201"])

@@ -1,0 +1,9 @@
+stateDiagram-v2
+  [*] --> pending : student submits form
+  pending --> approved : teacher approves
+  pending --> rejected : teacher rejects (reason required)
+  approved --> ongoing : teacher marks started
+  ongoing --> completed : teacher marks completed (only on/after end date)
+  rejected --> [*]
+  completed --> [*] : hours added to CAS record
+  note right of approved : visible in search and accepts join requests

@@ -1,0 +1,11 @@
+flowchart TB
+  C["<b>1. Browser — front end</b><br/>index.html (page skeleton) · app.js (draws screens, calls fetch) · styles.css"]
+  MW["<b>2a. Express middleware</b><br/>express.json (read body) → loadUser (session cookie → req.user) → requireRole (401 / 403)"]
+  R["<b>2b. Route modules — one per role</b><br/>authRoutes /api/auth · projectRoutes /api/projects, /api/my<br/>teacherRoutes /api/teacher · principalRoutes /api/principal · adminRoutes /api/admin"]
+  L["<b>2c. Algorithm modules — pure functions, unit-tested</b><br/>search.js (Alg 1) · joinRules.js (Alg 2) · statusFlow.js (Alg 3) · casRecord.js (Alg 4)<br/>validation.js · dates.js"]
+  DB[("<b>3. SQLite database file</b><br/>data/cas.db — schools, users, projects, memberships, sessions")]
+  C -- "HTTP request: JSON body + session cookie" --> MW
+  MW --> R
+  R -- "calls" --> L
+  R -- "parameterised SQL (? placeholders)" --> DB
+  R -. "JSON response (data or {error})" .-> C

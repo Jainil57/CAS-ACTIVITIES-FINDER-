@@ -1,0 +1,20 @@
+sequenceDiagram
+  actor St as Student
+  participant UI as Browser (app.js)
+  participant API as Express server
+  participant JR as joinRules.js
+  participant DB as SQLite
+  St->>UI: clicks "Join as volunteer"
+  UI->>API: POST /api/projects/2/join {role:"volunteer"} + cookie
+  API->>DB: find session token → user
+  API->>DB: project, existing request, accepted counts, schedule
+  API->>JR: checkJoinRequest({...})
+  JR-->>API: {ok:true} or {ok:false, status, reason}
+  alt allowed
+    API->>DB: INSERT membership (pending)
+    API-->>UI: 201 {message}
+    UI-->>St: green message, page redrawn
+  else refused
+    API-->>UI: 409 {error: reason}
+    UI-->>St: red message with the reason
+  end

@@ -1,0 +1,77 @@
+/* styles.css — the look of the app. Colours are kept in variables so they can be changed in one place. */
+:root {
+  --ink: #1d2433;
+  --muted: #5d6677;
+  --line: #d9dee8;
+  --bg: #f5f7fb;
+  --card: #ffffff;
+  --brand: #1f4e8c;
+  --creativity: #8a3ffc;
+  --activity: #0f8a5f;
+  --service: #c2410c;
+  --ok: #0f7b3e;
+  --bad: #b42318;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--ink); background: var(--bg); line-height: 1.45; }
+a { color: var(--brand); }
+
+.topbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; padding: 12px 24px; background: var(--brand); color: #fff; }
+.topbar a { color: #fff; text-decoration: none; }
+.brand { font-weight: 700; font-size: 1.15rem; }
+#nav { display: flex; flex-wrap: wrap; gap: 16px; flex: 1; }
+#nav a.active { text-decoration: underline; text-underline-offset: 6px; }
+#who { font-size: 0.9rem; }
+#who button { margin-left: 8px; background: transparent; color: #fff; border: 1px solid #fff; }
+
+main { max-width: 1040px; margin: 24px auto; padding: 0 16px; }
+h1 { font-size: 1.5rem; margin: 0 0 16px; }
+h2 { font-size: 1.15rem; margin: 24px 0 8px; }
+
+.message { max-width: 1040px; margin: 16px auto 0; padding: 10px 14px; border-radius: 6px; }
+.message.error { background: #fdecea; color: var(--bad); }
+.message.success { background: #e7f6ec; color: var(--ok); }
+
+.panel { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+.narrow { max-width: 420px; margin: 40px auto; }
+
+form.stack { display: grid; gap: 12px; }
+form.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; align-items: end; }
+label { display: grid; gap: 4px; font-size: 0.9rem; color: var(--muted); }
+label.check { display: flex; align-items: center; gap: 8px; }
+input, select, textarea { font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: #fff; color: var(--ink); }
+textarea { min-height: 90px; }
+.full { grid-column: 1 / -1; }
+
+button { font: inherit; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--brand); background: var(--brand); color: #fff; cursor: pointer; }
+button.secondary { background: #fff; color: var(--brand); }
+button.danger { background: var(--bad); border-color: var(--bad); }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 16px; display: grid; gap: 6px; }
+.card h3 { margin: 0; font-size: 1.05rem; }
+.meta { color: var(--muted); font-size: 0.88rem; }
+
+.tag { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.78rem; font-weight: 600; color: #fff; background: var(--muted); margin-right: 4px; }
+.tag.Creativity { background: var(--creativity); }
+.tag.Activity { background: var(--activity); }
+.tag.Service { background: var(--service); }
+.tag.light { background: #e8edf6; color: var(--ink); }
+
+table { width: 100%; border-collapse: collapse; background: var(--card); }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 0.85rem; color: var(--muted); }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
+
+.totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.total { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+.total strong { display: block; font-size: 1.6rem; }
+
+/* When the CAS record is printed, hide everything except the record itself. */
+@media print {
+  .topbar, .message, .no-print { display: none !important; }
+  body { background: #fff; }
+}

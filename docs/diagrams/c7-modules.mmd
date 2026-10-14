@@ -1,0 +1,50 @@
+classDiagram
+  class dates_js {
+    +isValidDate(text) bool
+    +addDays(text, days) text
+    +localToday() text
+    +datesOverlap(sA, eA, sB, eB) bool
+  }
+  class validation_js {
+    +STRANDS, ROLES
+    +cleanText(value, min, max)
+    +toWholeNumber(value, min, max)
+    +passwordProblem(password)
+    +cleanLoginId(value)
+    +validateProject(input, today) errors+project
+  }
+  class auth_js {
+    +hashPassword(pw) text
+    +verifyPassword(pw, stored) bool
+    +createSession(db, userId) token
+    +loadUser(db) middleware
+    +requireRole(...roles) middleware
+    +publicUser(user)
+  }
+  class search_js {
+    +normalise(text) text
+    +scoreProject(project, words) int
+    +searchProjects(projects, filters) list
+  }
+  class joinRules_js {
+    +findClash(schedule, project)
+    +checkJoinRequest(input) result
+  }
+  class statusFlow_js {
+    +TRANSITIONS
+    +canMove(from, to) bool
+  }
+  class casRecord_js {
+    +buildCasRecord(rows) record
+  }
+  class db_js {
+    +createDb(filename) db
+  }
+  class app_js {
+    +createApp(db, options) app
+  }
+  app_js ..> auth_js
+  app_js ..> db_js
+  joinRules_js ..> dates_js
+  joinRules_js ..> validation_js
+  validation_js ..> dates_js

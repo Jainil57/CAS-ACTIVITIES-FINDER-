@@ -1,0 +1,22 @@
+<!doctype html>
+<!-- index.html — the ONE page of the app. app.js swaps the contents of <main> for each screen. -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <!-- Makes the layout fit phone screens instead of showing a zoomed-out desktop page. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CAS Activities Finder</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a href="#/" class="brand">CAS Activities Finder</a>
+    <nav id="nav"></nav>            <!-- links for the logged-in role are added by app.js -->
+    <div id="who"></div>            <!-- "Diya Patel (student) · Log out" -->
+  </header>
+  <!-- Success/error messages appear here. role="status" makes screen readers announce them. -->
+  <div id="message" class="message" role="status" hidden></div>
+  <main id="view"></main>         <!-- the current screen is drawn here -->
+  <script src="app.js"></script>
+</body>
+</html>

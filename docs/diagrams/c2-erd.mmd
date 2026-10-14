@@ -1,0 +1,55 @@
+erDiagram
+  SCHOOLS ||--o{ USERS : "has"
+  SCHOOLS ||--o{ PROJECTS : "hosts"
+  USERS ||--o{ PROJECTS : "creates"
+  USERS ||--o{ MEMBERSHIPS : "requests"
+  PROJECTS ||--o{ MEMBERSHIPS : "receives"
+  USERS ||--o{ SESSIONS : "logs in with"
+  SCHOOLS {
+    int id PK
+    text name UK
+    text city
+    int is_active
+  }
+  USERS {
+    int id PK
+    int school_id FK "NULL for admin"
+    text login_id "UNIQUE with school_id"
+    text name
+    text role "student|teacher|principal|admin"
+    text password_hash "salt:scrypt hash"
+    int is_active
+  }
+  PROJECTS {
+    int id PK
+    text title
+    text description
+    text strand "Creativity|Activity|Service"
+    int school_id FK
+    int creator_id FK
+    int interschool
+    text location
+    text start_date
+    text end_date
+    text apply_deadline
+    int hours
+    int fee
+    int cap_participant
+    int cap_volunteer
+    int cap_organizer
+    text status "pending|approved|rejected|ongoing|completed"
+    text teacher_comment
+  }
+  MEMBERSHIPS {
+    int id PK
+    int project_id FK
+    int user_id FK
+    text role "participant|volunteer|organizer"
+    text status "pending|accepted|rejected"
+    text requested_at
+  }
+  SESSIONS {
+    text token PK
+    int user_id FK
+    int expires_at
+  }
