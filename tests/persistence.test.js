@@ -1,17 +1,16 @@
 // persistence.test.js — SC10: data must still be there after the server is stopped and restarted.
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
-const os = require('node:os');
-const path = require('node:path');
+const crypto = require('node:crypto');
+const config = require('../config');
 const { createDb } = require('../src/db');
 const { createApp } = require('../src/app');
 const { seedDemo } = require('../scripts/seed');
-const { validProject, TODAY } = require('./helpers');
+const { validProject, dropDatabase, TODAY } = require('./helpers');
 
-// Starts a server on a database FILE (not in memory) and returns helpers to talk to it.
-async function start(file) {
-  const db = createDb(file);
+// Connects to the MySQL database and starts a server on it.
+async function start(database) {
+  const db = await createDb({ ...config, database });
   const server = await new Promise((resolve) => { const s = createApp(db, { today: () => TODAY }).listen(0, () => resolve(s)); });
   const base = `http://127.0.0.1:${server.address().port}`;
   const send = async (method, url, body, cookie) => {
@@ -21,26 +20,27 @@ async function start(file) {
     });
     return { status: res.status, data: await res.json(), cookie: (res.headers.get('set-cookie') || '').split(';')[0] };
   };
-  return { db, send, stop: () => { server.closeAllConnections(); server.close(); db.close(); } };
+  const stop = async () => { server.closeAllConnections(); server.close(); await db.close(); };
+  return { db, send, stop };
 }
 
 test('T27 (SC10) projects, requests and logins survive a server restart', async () => {
-  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'cas-'));
-  const file = path.join(folder, 'cas.db');
-  seedDemo(createDb(file), TODAY);
+  const database = `cas_test_${crypto.randomBytes(4).toString('hex')}`;
+  try {
+    const first = await start(database);
+    await seedDemo(first.db, TODAY);
+    const login = await first.send('POST', '/api/auth/login', { schoolId: 1, loginId: 'S1002', password: 'Password1' });
+    const created = await first.send('POST', '/api/projects', validProject(), login.cookie);
+    assert.equal(created.status, 201);
+    await first.stop();
 
-  // First run: log in and create a project.
-  const first = await start(file);
-  const login = await first.send('POST', '/api/auth/login', { schoolId: 1, loginId: 'S1002', password: 'Password1' });
-  const created = await first.send('POST', '/api/projects', validProject(), login.cookie);
-  assert.equal(created.status, 201);
-  first.stop();                                                 // "switch the server off"
-
-  // Second run on the same file: the project is still there and the session is still valid.
-  const second = await start(file);
-  const mine = await second.send('GET', '/api/my/projects', undefined, login.cookie);
-  assert.equal(mine.status, 200);
-  assert.ok(mine.data.created.some((p) => p.id === created.data.id && p.title === 'Mangrove Planting Day'));
-  second.stop();
-  fs.rmSync(folder, { recursive: true, force: true });
+    // Second run on the same database: the project is still there and the login still works.
+    const second = await start(database);
+    const mine = await second.send('GET', '/api/my/projects', undefined, login.cookie);
+    assert.equal(mine.status, 200);
+    assert.ok(mine.data.created.some((p) => p.id === created.data.id && p.title === 'Mangrove Planting Day'));
+    await second.stop();
+  } finally {
+    await dropDatabase(database);
+  }
 });

@@ -1,27 +1,24 @@
 // app.js — the browser side. It draws each screen and talks to the server with fetch().
-// The address after "#" decides the screen: "#/browse", "#/project/5", "#/record" and so on.
 
-let currentUser = null;                              // the logged-in user, or null
-const view = document.getElementById('view');        // the <main> element that screens are drawn into
+let currentUser = null;
+const view = document.getElementById('view');
 
 // ======================= helpers =======================
 
-// Sends a request to the server and returns the JSON answer. Throws an Error with the server's
-// message if something went wrong, so every screen can show the reason to the user.
+// Sends a request and returns the JSON answer. Throws an Error with the server's message.
 async function api(method, url, body) {
   const options = { method, headers: {} };
   if (body !== undefined) {
     options.headers['Content-Type'] = 'application/json';
-    options.body = JSON.stringify(body);             // turn the JavaScript object into JSON text
+    options.body = JSON.stringify(body);
   }
-  const response = await fetch(url, options);        // wait for the server to answer
-  const data = await response.json().catch(() => ({}));   // read the JSON body (or {} if there is none)
+  const response = await fetch(url, options);
+  const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.error || `Request failed (${response.status})`);
   return data;
 }
 
-// Makes text safe to put inside HTML. Without this, a project titled "<script>…" would run as code
-// in every visitor's browser (a cross-site scripting / XSS attack).
+// Escapes user text before putting it in HTML (stops XSS).
 function esc(value) {
   const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
   return String(value ?? '').replace(/[&<>"']/g, (ch) => map[ch]);
@@ -31,7 +28,7 @@ function esc(value) {
 let messageTimer;
 function showMessage(text, type = 'error') {
   const box = document.getElementById('message');
-  box.textContent = text;                            // textContent never interprets HTML — always safe
+  box.textContent = text;
   box.className = `message ${type}`;
   box.hidden = false;
   clearTimeout(messageTimer);
@@ -92,7 +89,7 @@ function renderTopbar() {
 
 // Picks the right screen for the current address and draws it.
 async function router() {
-  const [, page, id] = location.hash.split('/');      // "#/project/5" → ["#", "project", "5"]
+  const [, page, id] = location.hash.split('/');
   renderTopbar();
   if (!currentUser) return page === 'activate' ? showActivate() : showLogin();
 
@@ -101,7 +98,7 @@ async function router() {
     teacher: showTeacher, members: showMembers, schools: showSchools,
   };
   const allowed = NAV[currentUser.role].map(([hash]) => hash).concat('project');
-  if (!allowed.includes(page)) {                     // unknown page or not for this role → home screen
+  if (!allowed.includes(page)) {
     location.hash = `#/${NAV[currentUser.role][0][0]}`;
     return;
   }
@@ -133,13 +130,13 @@ async function showLogin() {
       <p class="meta">First time here? <a href="#/activate">Activate your account</a> with the ID your school gave you.</p>
     </section>`;
   document.getElementById('login-form').onsubmit = async (event) => {
-    event.preventDefault();                          // stop the browser reloading the page
+    event.preventDefault();
     try {
       const data = await api('POST', '/api/auth/login', formData(event.target));
       currentUser = data.user;
-      document.getElementById('message').hidden = true;   // clear any old "wrong password" message
+      document.getElementById('message').hidden = true;
       location.hash = `#/${NAV[currentUser.role][0][0]}`;
-      router();                                      // the hash may not change, so draw the screen directly
+      router();
     } catch (err) {
       showMessage(err.message);
     }
@@ -213,7 +210,7 @@ async function showBrowse() {
     <div class="cards" id="results"></div>`;
   const form = document.getElementById('search-form');
   const search = async () => {
-    const params = new URLSearchParams(formData(form));   // { q: 'beach' } → "q=beach"
+    const params = new URLSearchParams(formData(form));
     const projects = await api('GET', `/api/projects?${params}`);
     document.getElementById('result-count').textContent = `${projects.length} project(s) found`;
     document.getElementById('results').innerHTML = projects.length
@@ -221,7 +218,7 @@ async function showBrowse() {
       : '<p>No projects match. Try fewer or shorter keywords.</p>';
   };
   form.onsubmit = (event) => { event.preventDefault(); search().catch((err) => showMessage(err.message)); };
-  await search();                                         // show all projects straight away
+  await search();
 }
 
 // ======================= project details =======================
@@ -272,7 +269,7 @@ async function showProject(id) {
       try {
         const result = await api('POST', `/api/projects/${id}/join`, { role: button.dataset.role });
         showMessage(result.message, 'success');
-        showProject(id);                                  // redraw with the new status
+        showProject(id);
       } catch (err) { showMessage(err.message); }
     };
   });
@@ -389,7 +386,7 @@ async function showTeacher() {
       let comment = '';
       if (button.dataset.status === 'rejected') {
         comment = prompt('Reason for rejecting (the student will see this):');
-        if (comment === null) return;                         // teacher pressed Cancel
+        if (comment === null) return;
       }
       try {
         const result = await api('POST', `/api/teacher/projects/${button.dataset.id}/status`, { status: button.dataset.status, comment });
@@ -501,7 +498,7 @@ async function showSchools() {
 
 // ======================= start-up =======================
 
-window.addEventListener('hashchange', router);       // redraw whenever the address after "#" changes
+window.addEventListener('hashchange', router);
 
 // Ask the server whether we are already logged in (the session cookie may still be valid), then draw.
 api('GET', '/api/auth/me')

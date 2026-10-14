@@ -3,7 +3,7 @@ sequenceDiagram
   participant UI as Browser (app.js)
   participant API as Express server
   participant JR as joinRules.js
-  participant DB as SQLite
+  participant DB as MySQL
   St->>UI: clicks "Join as volunteer"
   UI->>API: POST /api/projects/2/join {role:"volunteer"} + cookie
   API->>DB: find session token → user

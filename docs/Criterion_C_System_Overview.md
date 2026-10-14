@@ -4,7 +4,7 @@
 
 ## C1. System model
 
-The product is a three-tier JavaScript web application (Figure C1). It is designed for IBDP schools in Jakarta, starting with GMIS. The browser shows a single page whose screens are drawn by `app.js`. The Express server authenticates each request, applies the rules, and is the only tier that touches the SQLite database (Figure C2). Rules are kept in pure-function modules (Figure C3) so that each one can be tested on its own.
+The product is a three-tier JavaScript web application (Figure C1). It is designed for IBDP schools in Jakarta, starting with GMIS. The browser shows a single page whose screens are drawn by `app.js`. The Express server authenticates each request, applies the rules, and is the only tier that touches the MySQL database (Figure C2). Rules are kept in pure-function modules (Figure C3) so that each one can be tested on its own.
 
 ![Figure C1 – Architecture](images/c1-architecture.png)
 *Figure C1: Architecture, modules and API route groups.*
@@ -98,9 +98,9 @@ There are three levels of testing: unit tests on the algorithm functions, HTTP i
 | T28–29 | 2 | extreme | 2,000 projects (HTTP); 20,000 (function) | < 1 s; < 0.5 s |
 | T19–20 | 3 | N/I | valid project; 2 bad fields; 60 KB body | pending and hidden; 2 errors; 413 |
 | T11–12, T22 | 4 | B/I | on/after deadline; last place/full; duplicate; own; clash; hidden | only valid cases accepted, with reasons |
-| T23 | 5 | B/I | 2 requests, 1 place; non-creator decides | second refused; 404 |
+| T23, T30 | 5 | B/I | 2 requests, 1 place (one after another, then at the same moment); non-creator decides | second refused; 404 |
 | T13, T21 | 6 | I | skip a stage; reject without reason; complete early | refused |
 | T25–26 | 7 | N/I | add duplicate ID; remove student; replace principal; school area `Mumbai` | 409; old cookie 401; old principal refused; 400 |
 | T14, T24 | 8 | N/B | completed + ongoing; new student | completed hours only; empty |
 | T17, UI | 9 | I | cross-role calls; title `<img onerror=…>` | 401/403; shown as text |
-| T27 | 10 | N | restart server on the same file | data and login kept |
+| T27 | 10 | N | restart server on the same MySQL database | data and login kept |

@@ -1,5 +1,4 @@
 // app.js — builds the Express web application by plugging all the pieces together.
-// It is a function (not started immediately) so the tests can build an app with a test database.
 const path = require('node:path');
 const express = require('express');
 const { loadUser } = require('./auth');
@@ -10,9 +9,9 @@ function createApp(db, options = {}) {
   const today = options.today || localToday;
   const app = express();
 
-  app.use(express.json({ limit: '50kb' }));                         // read JSON request bodies (max 50 KB)
-  app.use(loadUser(db));                                            // work out who is logged in
-  app.use(express.static(path.join(__dirname, '..', 'public')));    // send index.html, app.js, styles.css
+  app.use(express.json({ limit: '50kb' }));
+  app.use(loadUser(db));
+  app.use(express.static(path.join(__dirname, '..', 'public')));
 
   // Each group of API routes lives in its own file (modular design).
   app.use('/api/auth', require('./routes/authRoutes')(db));
@@ -28,8 +27,8 @@ function createApp(db, options = {}) {
   app.use((err, req, res, next) => {
     if (err.type === 'entity.parse.failed') return res.status(400).json({ error: 'Request body is not valid JSON.' });
     if (err.type === 'entity.too.large') return res.status(413).json({ error: 'Request is too large.' });
-    console.error(err);                                             // log the details for the developer
-    res.status(500).json({ error: 'Something went wrong on the server.' });   // never show internals to users
+    console.error(err);
+    res.status(500).json({ error: 'Something went wrong on the server.' });
   });
 
   return app;

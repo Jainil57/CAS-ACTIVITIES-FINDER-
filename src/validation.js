@@ -1,25 +1,23 @@
 // validation.js — checks everything a user types BEFORE it is saved.
-// The server never trusts the browser: a student could bypass the HTML form, so every rule is
-// checked again here. Each function returns a cleaned value, or null / an error message.
 const { isValidDate } = require('./dates');
 
-const STRANDS = ['Creativity', 'Activity', 'Service'];   // the three CAS strands
+const STRANDS = ['Creativity', 'Activity', 'Service'];
 const ROLES = ['participant', 'volunteer', 'organizer']; // ways a student can join a project
 // Areas of Jakarta and its surrounding cities (Jabodetabek) where IBDP schools are located.
 const AREAS = ['Jakarta Pusat', 'Jakarta Utara', 'Jakarta Barat', 'Jakarta Selatan', 'Jakarta Timur',
   'Bogor', 'Depok', 'Tangerang', 'Tangerang Selatan', 'Bekasi'];
-const MAX_FEE = 10000000;                                // Rp 10.000.000 — fees are in Indonesian Rupiah
+const MAX_FEE = 10000000;
 
 // Trims spaces and checks the length is between min and max characters. Returns the text or null.
 function cleanText(value, min, max) {
-  if (typeof value !== 'string') return null;            // numbers, objects, undefined → invalid
-  const text = value.trim().replace(/\s+/g, ' ');        // remove outer spaces, squash inner runs of spaces
+  if (typeof value !== 'string') return null;
+  const text = value.trim().replace(/\s+/g, ' ');
   return text.length >= min && text.length <= max ? text : null;
 }
 
 // Converts a value to a whole number between min and max. Returns the number or null.
 function toWholeNumber(value, min, max) {
-  const number = Number(value);                          // "12" → 12, "abc" → NaN
+  const number = Number(value);
   return Number.isInteger(number) && number >= min && number <= max ? number : null;
 }
 
@@ -35,14 +33,13 @@ function passwordProblem(password) {
 function cleanLoginId(value) {
   const id = cleanText(value, 3, 12);
   if (!id) return null;
-  const upper = id.toUpperCase();                        // "s1001" and "S1001" mean the same student
-  return /^[A-Z0-9]+$/.test(upper) ? upper : null;       // only letters and digits allowed
+  const upper = id.toUpperCase();
+  return /^[A-Z0-9]+$/.test(upper) ? upper : null;
 }
 
 // Validates the "Create project" form. `today` is "YYYY-MM-DD".
-// Returns { errors: [...messages], project: {...cleaned values} }.
 function validateProject(input, today) {
-  const errors = [];                                     // collect EVERY problem, not just the first
+  const errors = [];
   const body = input || {};
 
   const title = cleanText(body.title, 5, 80);
@@ -72,7 +69,7 @@ function validateProject(input, today) {
   const hours = toWholeNumber(body.hours, 1, 200);
   if (hours === null) errors.push('CAS hours must be a whole number from 1 to 200.');
 
-  const fee = toWholeNumber(body.fee ?? 0, 0, MAX_FEE);  // "??" means: use 0 if fee was not sent
+  const fee = toWholeNumber(body.fee ?? 0, 0, MAX_FEE);
   if (fee === null) errors.push('Fee must be a whole number of Rupiah from 0 to 10000000.');
 
   const capParticipant = toWholeNumber(body.capParticipant, 0, 500);

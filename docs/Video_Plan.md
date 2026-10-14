@@ -11,6 +11,6 @@ The video must show **full functionality and examples of testing**. Record at 12
 | 2:50–3:30 | Teacher: reject with a reason, mark started, deadline after the start date refused | SC6 |
 | 3:30–4:00 | CAS record (Aarav) and the print preview | SC8 |
 | 4:00–4:30 | Student types `/api/teacher/projects` in the address bar → 403; project title `<img src=x onerror=alert(1)>` shown as text; stop and restart the server → data still there | SC9, SC10 |
-| 4:30–5:00 | Run `npm test` → 29 passing | all |
+| 4:30–5:00 | Run `npm test` → 30 passing | all |
 
 Tip: run `npm run seed` just before recording so the demo data is fresh.

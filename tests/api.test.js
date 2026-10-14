@@ -1,5 +1,4 @@
 // api.test.js — integration tests: real HTTP requests to a running server with a test database.
-// Each test starts its own fresh server so tests cannot affect each other.
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { startTestServer, validProject } = require('./helpers');
@@ -7,7 +6,7 @@ const { startTestServer, validProject } = require('./helpers');
 // Runs `fn` with a fresh server and always shuts the server down afterwards (even if a check fails).
 async function withServer(fn) {
   const t = await startTestServer();
-  try { await fn(t); } finally { t.close(); }
+  try { await fn(t); } finally { await t.close(); }
 }
 
 const GMIS = 1;
@@ -35,21 +34,21 @@ test('T16 (SC1) login rejects wrong details with one message and stores only has
   assert.equal(wrongPassword.status, 401);
   assert.equal(unknownId.status, 401);
   assert.equal(notActivated.status, 401);
-  assert.equal(wrongPassword.data.error, unknownId.data.error);     // attacker cannot tell which IDs exist
+  assert.equal(wrongPassword.data.error, unknownId.data.error);
 
   const ok = await request('POST', '/api/auth/login', { schoolId: GMIS, loginId: 'S1001', password: 'Password1' });
   assert.equal(ok.status, 200);
   assert.equal(ok.data.user.name, 'Aarav Shah');
-  assert.equal(ok.data.user.password_hash, undefined);              // hash never sent to the browser
+  assert.equal(ok.data.user.password_hash, undefined);
 
-  const stored = db.prepare("SELECT password_hash FROM users WHERE login_id = 'S1001'").get().password_hash;
+  const stored = (await db.get("SELECT password_hash FROM users WHERE login_id = 'S1001'")).password_hash;
   assert.notEqual(stored, 'Password1');
-  assert.match(stored, /^[0-9a-f]{32}:[0-9a-f]{128}$/);              // salt:hash
+  assert.match(stored, /^[0-9a-f]{32}:[0-9a-f]{128}$/);
 }));
 
 // ---------------- SC9: role-based access ----------------
 test('T17 (SC9) every role can only reach its own features', () => withServer(async ({ request, login, ids }) => {
-  assert.equal((await request('GET', '/api/projects')).status, 401);                      // not logged in
+  assert.equal((await request('GET', '/api/projects')).status, 401);
   const student = await login(GMIS, 'S1001');
   const teacher = await login(GMIS, 'T200');
   const principal = await login(GMIS, 'P100');
@@ -57,7 +56,7 @@ test('T17 (SC9) every role can only reach its own features', () => withServer(as
   assert.equal((await request('GET', '/api/teacher/projects', undefined, student)).status, 403);
   assert.equal((await request('GET', '/api/principal/members', undefined, teacher)).status, 403);
   assert.equal((await request('GET', '/api/admin/schools', undefined, principal)).status, 403);
-  assert.equal((await request('POST', '/api/projects', validProject(), teacher)).status, 403);  // only students create
+  assert.equal((await request('POST', '/api/projects', validProject(), teacher)).status, 403);
   assert.equal((await request('GET', '/api/projects', undefined, admin)).status, 403);
   // A principal cannot remove someone from ANOTHER school (Bima is at Senayan).
   assert.equal((await request('DELETE', `/api/principal/members/${ids.bima}`, undefined, principal)).status, 404);
@@ -80,7 +79,7 @@ test('T18 (SC2) search shows own-school and interschool projects only, with filt
   assert.deepEqual(service.data.map((p) => p.id), [ids.beach]);
   const other = await request('GET', '/api/projects?scope=other', undefined, rizky);
   assert.deepEqual(other.data.map((p) => p.id), [ids.futsal]);
-  const south = await request('GET', '/api/projects?q=jakarta%20selatan', undefined, rizky);   // search by area
+  const south = await request('GET', '/api/projects?q=jakarta%20selatan', undefined, rizky);
   assert.deepEqual(south.data.map((p) => p.id), [ids.futsal]);
   const none = await request('GET', '/api/projects?q=skydiving', undefined, rizky);
   assert.deepEqual(none.data, []);
@@ -99,15 +98,15 @@ test('T19 (SC3) a new project waits for approval and bad input is rejected', () 
   assert.equal(created.status, 201);
   const id = created.data.id;
   const search = await request('GET', '/api/projects?q=mangrove', undefined, rizky);
-  assert.deepEqual(search.data, []);                                                   // pending → hidden
+  assert.deepEqual(search.data, []);
   assert.equal((await request('GET', `/api/projects/${id}`, undefined, rizky)).status, 404);
   assert.equal((await request('GET', `/api/projects/${id}`, undefined, putri)).data.status, 'pending');
   const queue = await request('GET', '/api/teacher/projects', undefined, teacher);
-  assert.equal(queue.data[0].status, 'pending');                                      // pending listed first
+  assert.equal(queue.data[0].status, 'pending');
 
   const bad = await request('POST', '/api/projects', validProject({ title: 'Art', hours: 0 }), putri);
   assert.equal(bad.status, 400);
-  assert.equal(bad.data.errors.length, 2);                                            // both problems reported
+  assert.equal(bad.data.errors.length, 2);
 }));
 
 test('T20 (SC3) malformed and oversized requests are rejected safely', () => withServer(async ({ request, login }) => {
@@ -141,9 +140,9 @@ test('T21 (SC6) the teacher approves, rejects and progresses projects through va
   // Deadlines: must be a real date between today and the start date.
   const deadline = (d) => request('POST', `/api/teacher/projects/${ids.mural}/deadline`, { applyDeadline: d }, teacher);
   assert.equal((await deadline('2026-10-12')).status, 200);
-  assert.equal((await deadline('2026-09-01')).status, 400);     // in the past
-  assert.equal((await deadline('2026-12-31')).status, 400);     // after the start date
-  assert.equal((await deadline('2026-02-30')).status, 400);     // not a real date
+  assert.equal((await deadline('2026-09-01')).status, 400);
+  assert.equal((await deadline('2026-12-31')).status, 400);
+  assert.equal((await deadline('2026-02-30')).status, 400);
 }));
 
 // ---------------- SC4 and SC5: joining and managing requests ----------------
@@ -156,17 +155,17 @@ test('T22 (SC4) join requests follow every rule, including date-clash detection'
   const join = (id, role, who) => request('POST', `/api/projects/${id}/join`, { role }, who);
 
   assert.equal((await join(ids.mural, 'participant', rizky)).status, 201);
-  assert.equal((await join(ids.mural, 'volunteer', rizky)).status, 409);               // duplicate
-  const clash = await join(ids.futsal, 'participant', putri);                          // Putri is busy at the beach on those dates
+  assert.equal((await join(ids.mural, 'volunteer', rizky)).status, 409);
+  const clash = await join(ids.futsal, 'participant', putri);
   assert.equal(clash.status, 409);
   assert.match(clash.data.error, /Ancol Beach/);
-  assert.equal((await join(ids.beach, 'participant', aarav)).status, 409);              // creator
-  assert.equal((await join(ids.beach, 'participant', ayu)).status, 201);             // interschool: other school allowed
-  assert.equal((await join(ids.mural, 'participant', ayu)).status, 404);             // not interschool
-  assert.equal((await join(ids.beach, 'participant', bima)).status, 409);              // clashes with the league he runs
-  assert.equal((await join(ids.coding, 'participant', putri)).status, 404);              // pending project is hidden
-  assert.equal((await join(ids.oldAge, 'participant', putri)).status, 409);              // completed: closed
-  assert.equal((await join(ids.mural, 'captain', putri)).status, 400);                   // invalid role
+  assert.equal((await join(ids.beach, 'participant', aarav)).status, 409);
+  assert.equal((await join(ids.beach, 'participant', ayu)).status, 201);
+  assert.equal((await join(ids.mural, 'participant', ayu)).status, 404);
+  assert.equal((await join(ids.beach, 'participant', bima)).status, 409);
+  assert.equal((await join(ids.coding, 'participant', putri)).status, 404);
+  assert.equal((await join(ids.oldAge, 'participant', putri)).status, 409);
+  assert.equal((await join(ids.mural, 'captain', putri)).status, 400);
 }));
 
 test('T23 (SC5) the creator accepts/rejects requests and capacity can never be exceeded', () => withServer(async ({ request, login }) => {
@@ -178,16 +177,16 @@ test('T23 (SC5) the creator accepts/rejects requests and capacity can never be e
   const { data } = await request('POST', '/api/projects', validProject({ capParticipant: 1 }), putri);
   await request('POST', `/api/teacher/projects/${data.id}/status`, { status: 'approved' }, teacher);
   await request('POST', `/api/projects/${data.id}/join`, { role: 'participant' }, rizky);
-  await request('POST', `/api/projects/${data.id}/join`, { role: 'participant' }, aarav);   // both asked while 1 place was free
+  await request('POST', `/api/projects/${data.id}/join`, { role: 'participant' }, aarav);
 
   const detail = await request('GET', `/api/projects/${data.id}`, undefined, putri);
   const [first, second] = detail.data.requests;
-  assert.equal((await request('POST', `/api/memberships/${first.id}/decision`, { decision: 'accepted' }, aarav)).status, 404);  // not the creator
+  assert.equal((await request('POST', `/api/memberships/${first.id}/decision`, { decision: 'accepted' }, aarav)).status, 404);
   assert.equal((await request('POST', `/api/memberships/${first.id}/decision`, { decision: 'maybe' }, putri)).status, 400);
   assert.equal((await request('POST', `/api/memberships/${first.id}/decision`, { decision: 'accepted' }, putri)).status, 200);
-  assert.equal((await request('POST', `/api/memberships/${first.id}/decision`, { decision: 'rejected' }, putri)).status, 409);  // already decided
+  assert.equal((await request('POST', `/api/memberships/${first.id}/decision`, { decision: 'rejected' }, putri)).status, 409);
   const full = await request('POST', `/api/memberships/${second.id}/decision`, { decision: 'accepted' }, putri);
-  assert.equal(full.status, 409);                                                         // capacity re-checked
+  assert.equal(full.status, 409);
   assert.equal((await request('POST', `/api/memberships/${second.id}/decision`, { decision: 'rejected' }, putri)).status, 200);
 
   const after = await request('GET', `/api/projects/${data.id}`, undefined, putri);
@@ -199,16 +198,16 @@ test('T24 (SC8) the CAS record lists all activities and counts only completed ho
   const aarav = await login(GMIS, 'S1001');
   const { data } = await request('GET', '/api/my/cas-record', undefined, aarav);
   assert.deepEqual(data.entries.map((e) => [e.title, e.role]), [
-    ['Panti Werdha Visit', 'participant'],          // completed — 3 hours
-    ['Inter-school Futsal League', 'organizer'],  // ongoing, other school
-    ['Ancol Beach Clean-Up Drive', 'creator'],       // approved, not finished
+    ['Panti Werdha Visit', 'participant'],
+    ['Inter-school Futsal League', 'organizer'],
+    ['Ancol Beach Clean-Up Drive', 'creator'],
   ]);
   assert.deepEqual(data.totals, { Creativity: 0, Activity: 0, Service: 3, all: 3 });
 
   const nadia = await request('POST', '/api/auth/activate', { schoolId: GMIS, loginId: 'S1004', password: 'Nadia2026' });
   assert.equal(nadia.status, 201);
   const empty = await request('GET', '/api/my/cas-record', undefined, await login(GMIS, 'S1004', 'Nadia2026'));
-  assert.deepEqual(empty.data.entries, []);         // new student: empty record, no crash
+  assert.deepEqual(empty.data.entries, []);
 }));
 
 // ---------------- SC7: principal and service provider ----------------
@@ -218,10 +217,10 @@ test('T25 (SC7) the principal adds and removes students and teachers of their ow
   const add = (body) => request('POST', '/api/principal/members', body, principal);
 
   assert.equal((await add({ loginId: 's1005', name: 'Ishaan Verma', role: 'student' })).status, 201);
-  assert.equal((await add({ loginId: 'S1005', name: 'Someone Else', role: 'student' })).status, 409);   // duplicate ID
+  assert.equal((await add({ loginId: 'S1005', name: 'Someone Else', role: 'student' })).status, 409);
   assert.equal((await add({ loginId: 'S1-6', name: 'Bad Id', role: 'student' })).status, 400);
-  assert.equal((await add({ loginId: 'S1006', name: 'A', role: 'student' })).status, 400);               // name too short
-  assert.equal((await add({ loginId: 'S1006', name: 'New Head', role: 'principal' })).status, 400);      // cannot create principals
+  assert.equal((await add({ loginId: 'S1006', name: 'A', role: 'student' })).status, 400);
+  assert.equal((await add({ loginId: 'S1006', name: 'New Head', role: 'principal' })).status, 400);
   assert.equal((await request('POST', '/api/auth/activate', { schoolId: GMIS, loginId: 'S1005', password: 'Ishaan2026' })).status, 201);
 
   // Remove Rizky: his open session stops working and he can no longer log in.
@@ -238,7 +237,7 @@ test('T26 (SC7) the service provider adds/removes schools and assigns principals
 
   const school = await request('POST', '/api/admin/schools', { name: 'Kelapa Gading World School', city: 'Jakarta Utara' }, admin);
   assert.equal(school.status, 201);
-  assert.equal((await request('POST', '/api/admin/schools', { name: 'Mumbai Academy', city: 'Mumbai' }, admin)).status, 400);   // not a Jabodetabek area
+  assert.equal((await request('POST', '/api/admin/schools', { name: 'Mumbai Academy', city: 'Mumbai' }, admin)).status, 400);
   assert.equal((await request('POST', '/api/admin/schools', { name: 'KELAPA GADING world school', city: 'Jakarta Utara' }, admin)).status, 409);
   const assign = (body) => request('POST', `/api/admin/schools/${school.data.id}/principal`, body, admin);
   assert.equal((await assign({ loginId: 'P900', name: 'Pak Hendra' })).status, 201);
@@ -253,4 +252,25 @@ test('T26 (SC7) the service provider adds/removes schools and assigns principals
   const titles = (await request('GET', '/api/projects', undefined, rizky)).data.map((p) => p.title);
   assert.equal(titles.includes('Inter-school Futsal League'), false);
   assert.equal((await request('POST', '/api/auth/login', { schoolId: SENAYAN, loginId: 'S2001', password: 'Password1' })).status, 401);
+}));
+
+test('T30 (SC5) two acceptances at the same moment cannot overbook the last place', () => withServer(async ({ request, login }) => {
+  const putri = await login(GMIS, 'S1002');
+  const rizky = await login(GMIS, 'S1003');
+  const aarav = await login(GMIS, 'S1001');
+  const teacher = await login(GMIS, 'T200');
+
+  const { data } = await request('POST', '/api/projects', validProject({ capParticipant: 1 }), putri);
+  await request('POST', `/api/teacher/projects/${data.id}/status`, { status: 'approved' }, teacher);
+  await request('POST', `/api/projects/${data.id}/join`, { role: 'participant' }, rizky);
+  await request('POST', `/api/projects/${data.id}/join`, { role: 'participant' }, aarav);
+  const [first, second] = (await request('GET', `/api/projects/${data.id}`, undefined, putri)).data.requests;
+
+  const results = await Promise.all([
+    request('POST', `/api/memberships/${first.id}/decision`, { decision: 'accepted' }, putri),
+    request('POST', `/api/memberships/${second.id}/decision`, { decision: 'accepted' }, putri),
+  ]);
+  assert.deepEqual(results.map((r) => r.status).sort(), [200, 409]);
+  const after = await request('GET', `/api/projects/${data.id}`, undefined, putri);
+  assert.deepEqual(after.data.places.participant, { taken: 1, total: 1 });
 }));

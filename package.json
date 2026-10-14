@@ -1,19 +1,20 @@
 {
   "name": "cas-activities-finder",
   "version": "1.0.0",
-  "description": "A web platform where IBDP students find, join and organise CAS projects, teachers approve them and schools keep a CAS record for every student.",
+  "description": "CAS project finder for IBDP schools in Jakarta (GMIS). Node.js, Express and MySQL.",
   "main": "server.js",
   "scripts": {
-    "start": "node --disable-warning=ExperimentalWarning server.js",
-    "seed": "node --disable-warning=ExperimentalWarning scripts/seed.js",
-    "test": "node --disable-warning=ExperimentalWarning --test"
+    "start": "node server.js",
+    "seed": "node scripts/seed.js",
+    "test": "node --test"
   },
   "engines": {
-    "node": ">=22.5.0"
+    "node": ">=18"
   },
   "author": "Jainil Khandelwal",
   "license": "MIT",
   "dependencies": {
-    "express": "^5.3.0"
+    "express": "^5.3.0",
+    "mysql2": "^3.24.6"
   }
 }

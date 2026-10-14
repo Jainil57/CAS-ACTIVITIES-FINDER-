@@ -1,18 +1,27 @@
 // helpers.js — shared set-up for the integration tests.
-// Each test file gets a brand-new in-memory database with the demo data and a real HTTP server
-// on a random free port, so tests never affect each other or the real data/cas.db file.
+const crypto = require('node:crypto');
+const mysql = require('mysql2/promise');
+const config = require('../config');
 const { createDb } = require('../src/db');
 const { createApp } = require('../src/app');
 const { seedDemo, DEMO_PASSWORD } = require('../scripts/seed');
 
-const TODAY = '2026-10-01';   // a fixed "today" so date rules give the same result every time
+const TODAY = '2026-10-01';
+
+// Each test gets its own empty MySQL database (cas_test_<random>), deleted again by close().
+async function dropDatabase(name) {
+  const conn = await mysql.createConnection({ host: config.host, port: config.port, user: config.user, password: config.password });
+  await conn.query(`DROP DATABASE IF EXISTS \`${name}\``);
+  await conn.end();
+}
 
 async function startTestServer(today = TODAY) {
-  const db = createDb(':memory:');
-  const ids = seedDemo(db, today);
+  const database = `cas_test_${crypto.randomBytes(4).toString('hex')}`;
+  const db = await createDb({ ...config, database });
+  const ids = await seedDemo(db, today);
   const app = createApp(db, { today: () => today });
   const server = await new Promise((resolve) => {
-    const s = app.listen(0, () => resolve(s));        // port 0 = "any free port"
+    const s = app.listen(0, () => resolve(s));
   });
   const base = `http://127.0.0.1:${server.address().port}`;
 
@@ -33,13 +42,14 @@ async function startTestServer(today = TODAY) {
     return res.cookie;
   }
 
-  function close() {
+  async function close() {
     server.closeAllConnections();
     server.close();
-    db.close();
+    await db.close();
+    await dropDatabase(database);
   }
 
-  return { db, ids, today, request, login, close };
+  return { db, ids, today, database, request, login, close };
 }
 
 // A valid "create project" form; tests copy it and change one field at a time.
@@ -62,4 +72,4 @@ function validProject(overrides = {}) {
   };
 }
 
-module.exports = { startTestServer, validProject, TODAY };
+module.exports = { startTestServer, dropDatabase, validProject, TODAY };

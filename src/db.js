@@ -1,76 +1,114 @@
-// db.js — opens the SQLite database file and makes sure every table exists.
-// SQLite keeps the whole database in ONE file on disk, so data survives when the server restarts.
-// `node:sqlite` is built into Node.js (version 22.5 and later), so nothing extra has to be installed.
-const { DatabaseSync } = require('node:sqlite');
+// db.js — connects to MySQL, creates the database and tables if needed, and gives simple query helpers.
+const mysql = require('mysql2/promise');
 
-// The database design (see the ERD in Criterion C). Each CREATE TABLE describes one kind of record.
-// "IF NOT EXISTS" means running this again on an existing database does nothing harmful.
-const SCHEMA = `
-  CREATE TABLE IF NOT EXISTS schools (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,   -- unique number given automatically
-    name       TEXT    NOT NULL UNIQUE,             -- two schools cannot have the same name
-    city       TEXT    NOT NULL,                    -- Jabodetabek area, e.g. 'Jakarta Pusat'
-    is_active  INTEGER NOT NULL DEFAULT 1           -- 1 = active, 0 = removed (soft delete)
-  );
+const SCHEMA = [
+  `CREATE TABLE IF NOT EXISTS schools (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    name       VARCHAR(80) NOT NULL UNIQUE,
+    city       VARCHAR(40) NOT NULL,
+    is_active  TINYINT NOT NULL DEFAULT 1
+  )`,
+  `CREATE TABLE IF NOT EXISTS users (
+    id             INT AUTO_INCREMENT PRIMARY KEY,
+    school_id      INT NULL,
+    login_id       VARCHAR(12) NOT NULL,
+    name           VARCHAR(60) NOT NULL,
+    role           ENUM('student', 'teacher', 'principal', 'admin') NOT NULL,
+    password_hash  VARCHAR(200) NULL,
+    is_active      TINYINT NOT NULL DEFAULT 1,
+    UNIQUE (school_id, login_id),
+    FOREIGN KEY (school_id) REFERENCES schools(id)
+  )`,
+  `CREATE TABLE IF NOT EXISTS projects (
+    id               INT AUTO_INCREMENT PRIMARY KEY,
+    title            VARCHAR(80) NOT NULL,
+    description      TEXT NOT NULL,
+    strand           ENUM('Creativity', 'Activity', 'Service') NOT NULL,
+    school_id        INT NOT NULL,
+    creator_id       INT NOT NULL,
+    interschool      TINYINT NOT NULL DEFAULT 0,
+    location         VARCHAR(100) NOT NULL,
+    start_date       DATE NOT NULL,
+    end_date         DATE NOT NULL,
+    apply_deadline   DATE NOT NULL,
+    hours            INT NOT NULL,
+    fee              INT NOT NULL DEFAULT 0,
+    cap_participant  INT NOT NULL,
+    cap_volunteer    INT NOT NULL,
+    cap_organizer    INT NOT NULL,
+    status           ENUM('pending', 'approved', 'rejected', 'ongoing', 'completed') NOT NULL DEFAULT 'pending',
+    teacher_comment  VARCHAR(300) NOT NULL DEFAULT '',
+    created_at       DATE NOT NULL,
+    FOREIGN KEY (school_id) REFERENCES schools(id),
+    FOREIGN KEY (creator_id) REFERENCES users(id)
+  )`,
+  `CREATE TABLE IF NOT EXISTS memberships (
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    project_id    INT NOT NULL,
+    user_id       INT NOT NULL,
+    role          ENUM('participant', 'volunteer', 'organizer') NOT NULL,
+    status        ENUM('pending', 'accepted', 'rejected') NOT NULL DEFAULT 'pending',
+    requested_at  DATE NOT NULL,
+    UNIQUE (project_id, user_id),
+    FOREIGN KEY (project_id) REFERENCES projects(id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  )`,
+  `CREATE TABLE IF NOT EXISTS sessions (
+    token       CHAR(64) PRIMARY KEY,
+    user_id     INT NOT NULL,
+    expires_at  BIGINT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  )`,
+];
 
-  CREATE TABLE IF NOT EXISTS users (
-    id             INTEGER PRIMARY KEY AUTOINCREMENT,
-    school_id      INTEGER REFERENCES schools(id),  -- NULL only for the service provider (admin)
-    login_id       TEXT    NOT NULL,                -- the school student/staff ID, e.g. "S1001"
-    name           TEXT    NOT NULL,
-    role           TEXT    NOT NULL CHECK (role IN ('student', 'teacher', 'principal', 'admin')),
-    password_hash  TEXT,                            -- NULL until the person activates the account
-    is_active      INTEGER NOT NULL DEFAULT 1,
-    UNIQUE (school_id, login_id)                    -- an ID can repeat in different schools, not in one
-  );
+// Adds get / all / run helpers to a pool or a single connection.
+function helpers(conn) {
+  return {
+    async all(sql, ...params) {
+      const [rows] = await conn.query(sql, params);
+      return rows;
+    },
+    async get(sql, ...params) {
+      const [rows] = await conn.query(sql, params);
+      return rows[0];
+    },
+    async run(sql, ...params) {
+      const [result] = await conn.query(sql, params);
+      return { insertId: result.insertId, affectedRows: result.affectedRows };
+    },
+  };
+}
 
-  CREATE TABLE IF NOT EXISTS projects (
-    id               INTEGER PRIMARY KEY AUTOINCREMENT,
-    title            TEXT    NOT NULL,
-    description      TEXT    NOT NULL,
-    strand           TEXT    NOT NULL CHECK (strand IN ('Creativity', 'Activity', 'Service')),
-    school_id        INTEGER NOT NULL REFERENCES schools(id),
-    creator_id       INTEGER NOT NULL REFERENCES users(id),
-    interschool      INTEGER NOT NULL DEFAULT 0,    -- 1 = students of other schools may join
-    location         TEXT    NOT NULL,
-    start_date       TEXT    NOT NULL,              -- "YYYY-MM-DD"
-    end_date         TEXT    NOT NULL,
-    apply_deadline   TEXT    NOT NULL,
-    hours            INTEGER NOT NULL,              -- CAS hours a member earns
-    fee              INTEGER NOT NULL DEFAULT 0,    -- participation fee in Indonesian Rupiah (0 = free)
-    cap_participant  INTEGER NOT NULL,              -- how many of each role are needed
-    cap_volunteer    INTEGER NOT NULL,
-    cap_organizer    INTEGER NOT NULL,
-    status           TEXT    NOT NULL DEFAULT 'pending'
-                     CHECK (status IN ('pending', 'approved', 'rejected', 'ongoing', 'completed')),
-    teacher_comment  TEXT    NOT NULL DEFAULT '',
-    created_at       TEXT    NOT NULL
-  );
+// Creates the database if it is missing, creates the tables, and returns the helpers.
+async function createDb(config) {
+  const setup = await mysql.createConnection({ host: config.host, port: config.port, user: config.user, password: config.password });
+  await setup.query(`CREATE DATABASE IF NOT EXISTS \`${config.database}\``);
+  await setup.end();
 
-  CREATE TABLE IF NOT EXISTS memberships (
-    id            INTEGER PRIMARY KEY AUTOINCREMENT,
-    project_id    INTEGER NOT NULL REFERENCES projects(id),
-    user_id       INTEGER NOT NULL REFERENCES users(id),
-    role          TEXT    NOT NULL CHECK (role IN ('participant', 'volunteer', 'organizer')),
-    status        TEXT    NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'rejected')),
-    requested_at  TEXT    NOT NULL,
-    UNIQUE (project_id, user_id)                    -- one request per student per project
-  );
+  // dateStrings keeps DATE columns as "YYYY-MM-DD" text instead of JavaScript Date objects.
+  const pool = mysql.createPool({ ...config, dateStrings: true, connectionLimit: 10 });
+  for (const sql of SCHEMA) await pool.query(sql);
 
-  CREATE TABLE IF NOT EXISTS sessions (
-    token       TEXT    PRIMARY KEY,                -- long random string stored in the browser cookie
-    user_id     INTEGER NOT NULL REFERENCES users(id),
-    expires_at  INTEGER NOT NULL                    -- milliseconds since 1970 when the login expires
-  );
-`;
-
-// Opens (or creates) the database. `filename` is a path such as "data/cas.db",
-// or ":memory:" for a temporary database that only lives in RAM (used by the automated tests).
-function createDb(filename) {
-  const db = new DatabaseSync(filename);   // open the file (SQLite creates it if it is missing)
-  db.exec('PRAGMA foreign_keys = ON');     // make SQLite enforce the REFERENCES rules above
-  db.exec(SCHEMA);                         // create any tables that do not exist yet
-  return db;                               // give the open database back to the caller
+  return {
+    pool,
+    ...helpers(pool),
+    // Runs `work` inside a transaction: everything is saved together, or nothing is if an error happens.
+    async transaction(work) {
+      const conn = await pool.getConnection();
+      try {
+        await conn.beginTransaction();
+        const result = await work(helpers(conn));
+        await conn.commit();
+        return result;
+      } catch (err) {
+        await conn.rollback();
+        throw err;
+      } finally {
+        conn.release();
+      }
+    },
+    close: () => pool.end(),
+  };
 }
 
 module.exports = { createDb };

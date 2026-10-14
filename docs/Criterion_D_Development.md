@@ -4,7 +4,7 @@
 
 ## D1. Functionality
 
-All ten success criteria work and are shown in the video. The 29 automated tests all pass (Figure D1).
+All ten success criteria work and are shown in the video. The 30 automated tests all pass (Figure D1).
 
 | SC | Evidence | Tests |
 |---|---|---|
@@ -12,7 +12,7 @@ All ten success criteria work and are shown in the video. The 29 automated tests
 | 2 | [browse](images/ui-02-browse.png), [search](images/ui-03-search.png) | T08–10, T18, T28–29 |
 | 3 | [refused form](images/ui-06-create-invalid.png), [pending](images/ui-07-my-projects.png) | T01, T03–06, T19–20 |
 | 4 | [joined](images/ui-04-joined.png), [clash](images/ui-05-clash.png) | T02, T11–12, T22 |
-| 5 | [requests](images/ui-08-requests.png) | T23 |
+| 5 | [requests](images/ui-08-requests.png) | T23, T30 |
 | 6 | [teacher](images/ui-10-teacher.png) | T13, T21 |
 | 7 | [principal](images/ui-11-principal.png), [admin](images/ui-12-admin.png) | T25–26 |
 | 8 | [CAS record](images/ui-09-cas-record.png) | T14, T24 |
@@ -21,15 +21,15 @@ All ten success criteria work and are shown in the video. The 29 automated tests
 
 ## D2. Techniques
 
-### 1. Relational database with constraints and parameterised SQL
+### 1. MySQL database with constraints, parameterised SQL and transactions
 
 ```js
-role   TEXT NOT NULL CHECK (role IN ('participant', 'volunteer', 'organizer')),
+role ENUM('participant', 'volunteer', 'organizer') NOT NULL,
 UNIQUE (project_id, user_id)                                             // db.js — MEMBERSHIPS
 db.prepare('SELECT status FROM memberships WHERE project_id = ? AND user_id = ?').get(project.id, req.user.id)
 ```
 
-Students and projects have a many-to-many relationship, so a linking table was needed (Figure C2). The `CHECK` and `UNIQUE` constraints repeat the JavaScript rules inside the database, so a missed check in a route still can't store a duplicate or an invalid value. The `?` placeholders make all input data rather than SQL, which prevents injection.
+Students and projects have a many-to-many relationship, so a linking table was needed (Figure C2). The `ENUM` and `UNIQUE` constraints repeat the JavaScript rules inside the database, so a missed check in a route still can't store a duplicate or an invalid value. The `?` placeholders make all input data rather than SQL, which prevents injection.
 
 ### 2. Normalised partial matching with weighted ranking (Algorithm 1)
 
@@ -98,8 +98,8 @@ All screens use one `api()` helper, so the server's reason always reaches the us
 | Decision | Strength | Limitation |
 |---|---|---|
 | JavaScript on both tiers (originally planned: Java) | one language, native JSON, shared helpers | no compile-time types, so the tests had to catch type errors |
-| SQLite built into Node | no server to install; constraints, joins | one writer at a time; PostgreSQL needed for city-wide use |
-| Synchronous queries | a capacity check and the following insert can't interleave, which prevents overbooking (T23) | a slow query would block others; measured ≤ 65 ms |
+| MySQL | handles many users at once; constraints, joins, transactions | must be installed and running; the login is set in `config.js` |
+| Transaction with `SELECT … FOR UPDATE` when accepting | locks the project row, so two acceptances can't both take the last place (T30) | the second request waits briefly for the lock |
 | Soft delete | CAS history kept; reversible | an ID can't be reused |
 | Sessions in the database | survive restarts (T27); removal logs out instantly | one query per request |
 | No front-end framework | no build step; every line is explainable | whole screens re-render; some repeated wiring |
@@ -113,8 +113,8 @@ All screens use one `api()` helper, so the server's reason always reaches the us
 
 **Reliability.** Each test gets its own server and database, so test order can't matter. The suite also covers malformed JSON, oversized bodies, empty records, stale cookies and restarts.
 
-**Efficiency.** Searching 2,006 projects took 60 ms over HTTP. The algorithm alone took 63 ms for 20,000 projects: an O(n) scan plus an O(k log k) sort of the k matches.
+**Efficiency.** Searching 2,006 projects took 87 ms over HTTP (including the MySQL query). The algorithm alone took 112 ms for 20,000 projects: an O(n) scan plus an O(k log k) sort of the k matches.
 
-**Defect found.** T22 failed at first because joining a *pending* project returned 409 "not open", which revealed that the hidden project existed. Pending and rejected projects now return 404, and T12 covers both cases.
+**Defect found.** T22 failed at first because joining a *pending* project returned 409 "not open", which revealed that the hidden project existed. Pending and rejected projects now return 404, and T12 covers both cases. T30 sends two acceptances for the last place at the same moment. Without the row lock it failed 4 out of 5 runs (both were accepted); with the lock it passes every time.
 
 **Justification.** Every success criterion has automated tests, and every exit in Figure C4 has an assertion. One gap remains: there was no long-term trial with real students, which Criterion E addresses.

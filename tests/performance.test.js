@@ -1,5 +1,4 @@
 // performance.test.js — SC2: search must stay fast with a realistic amount of data.
-// 2,000 approved projects is far more than a group of schools would have at once.
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { startTestServer } = require('./helpers');
@@ -11,15 +10,15 @@ const STRANDS = ['Creativity', 'Activity', 'Service'];
 test('T28 (SC2) search over 2,000 projects responds in under 1 second', async () => {
   const t = await startTestServer();
   try {
-    const insert = t.db.prepare(`INSERT INTO projects (title, description, strand, school_id, creator_id, interschool, location,
-      start_date, end_date, apply_deadline, hours, cap_participant, cap_volunteer, cap_organizer, status, created_at)
-      VALUES (?, ?, ?, ?, ?, 1, 'Jakarta', '2026-12-01', '2026-12-02', '2026-11-20', 5, 10, 2, 1, 'approved', '2026-10-01')`);
-    t.db.exec('BEGIN');
+    // One multi-row INSERT adds all 2,000 projects at once.
+    const rows = [];
     for (let i = 0; i < 2000; i += 1) {
       const word = WORDS[i % WORDS.length];
-      insert.run(`${word} project ${i}`, `A ${word} activity for IB students number ${i}`, STRANDS[i % 3], (i % 2) + 1, t.ids.aarav);
+      rows.push([`${word} project ${i}`, `A ${word} activity for IB students number ${i}`, STRANDS[i % 3], (i % 2) + 1, t.ids.aarav,
+        1, 'Jakarta', '2026-12-01', '2026-12-02', '2026-11-20', 5, 10, 2, 1, 'approved', '2026-10-01']);
     }
-    t.db.exec('COMMIT');
+    await t.db.pool.query(`INSERT INTO projects (title, description, strand, school_id, creator_id, interschool, location,
+      start_date, end_date, apply_deadline, hours, cap_participant, cap_volunteer, cap_organizer, status, created_at) VALUES ?`, [rows]);
     const cookie = await t.login(1, 'S1003');
 
     const started = performance.now();
@@ -27,10 +26,10 @@ test('T28 (SC2) search over 2,000 projects responds in under 1 second', async ()
     const ms = performance.now() - started;
     console.log(`    search over ${2000 + 6} projects returned ${res.data.length} results in ${ms.toFixed(1)} ms`);
     assert.equal(res.status, 200);
-    assert.equal(res.data.length, 200);                 // every 10th project mentions robotics
+    assert.equal(res.data.length, 200);
     assert.ok(ms < 1000, `took ${ms} ms`);
   } finally {
-    t.close();
+    await t.close();
   }
 });
 

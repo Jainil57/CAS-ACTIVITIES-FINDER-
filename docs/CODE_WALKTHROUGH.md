@@ -1,309 +1,206 @@
-# Understanding the code, line by line
+# How the code works (study guide)
 
-This guide is for **you**, not for the examiner. It doesn't count toward the IA. Use it to learn the code well enough to explain any line to your teacher. Teachers are allowed to question you to confirm the work is yours.
+This guide is for you, not for the examiner. Use it to learn the code well enough to explain any part of it to your teacher.
 
-The fastest way to learn it:
+## 1. Run it on your laptop
 
-1. Run the app and click around (Part 1).
-2. Read the JavaScript primer (Part 3), so the syntax isn't a mystery.
-3. Follow one button click through every file (Part 4).
-4. Read each file with its line-by-line table (Part 5). Every line in the source also has its own comment.
-5. Test yourself with the viva questions (Part 7).
+1. Install **Node.js 18 or newer** from nodejs.org (the "LTS" version is fine).
+2. Install **MySQL 8** (on Windows use "MySQL Installer" from dev.mysql.com). Remember the root password you choose.
+3. Unzip the project and open `config.js`. Put your MySQL username (usually `root`) and password there.
+4. Open a terminal in the folder. Type `npm install` (only once), then `npm start`. The `cas_finder` database and its tables are created for you, and demo data is added.
+5. Open http://localhost:3000 in your browser.
+6. Optional: `npm test` runs the 30 tests, and `npm run seed` resets the demo data.
 
----
+If `npm start` says it can't connect, check that MySQL is running and that the password in `config.js` is right.
 
-## Part 1: Running it
-
-You need **Node.js 22.5 or newer** (download from nodejs.org). Then, in the project folder:
-
-```bash
-npm install        # downloads Express (the only library used)
-npm start          # starts the server → open http://localhost:3000
-npm test           # runs the 29 automated tests
-npm run seed       # wipes data/cas.db and reloads fresh demo data
-```
-
-Demo logins (password `Password1` for all):
+Every demo account uses the password `Password1`.
 
 | School | ID | Who | Role |
 |---|---|---|---|
-| Gandhi Memorial International School | `S1001` | Aarav Shah | student (created the beach clean-up) |
-| Gandhi Memorial International School | `S1002` | Putri Wijaya | student (shows the date-clash refusal) |
+| Gandhi Memorial International School | `S1001` | Aarav Shah | student |
+| Gandhi Memorial International School | `S1002` | Putri Wijaya | student (shows the date-clash message) |
 | Gandhi Memorial International School | `S1003` | Rizky Pratama | student |
-| Gandhi Memorial International School | `S1004` | Nadia Kusuma | student, **not activated**: use "Activate your account" |
+| Gandhi Memorial International School | `S1004` | Nadia Kusuma | not activated yet; use "Activate your account" |
 | Gandhi Memorial International School | `T200` | Mr. Vikram Mehta | teacher (CAS coordinator) |
-| Gandhi Memorial International School | `P100` | Ibu Ratna Dewi | principal |
-| Senayan IB Academy | `S2001` / `S2002` | Bima Santoso / Ayu Lestari | students at the other school |
-| Service provider (platform admin) | `ADMIN` | Service Provider | admin |
+| Gandhi Memorial International School | `P100` | Dr. Manish Semwal | principal |
+| Senayan IB Academy | `S2001`, `S2002` | Bima Santoso, Ayu Lestari | students at another school |
+| Service provider | `ADMIN` | Service Provider | admin |
 
-## Part 2: The folder map
+## 2. The big picture
 
-```
-server.js              ← START HERE: opens the database and starts the web server
-src/
-  app.js               ← plugs all the pieces into one Express app
-  db.js                ← database tables (the ERD in Criterion C)
-  auth.js              ← passwords, sessions, role checks
-  dates.js             ← date helpers (valid date? overlap?)
-  validation.js        ← checks everything users type
-  search.js            ← ALGORITHM 1: search and ranking
-  joinRules.js         ← ALGORITHM 2: may this student join? (conflict detection)
-  statusFlow.js        ← ALGORITHM 3: project life-cycle
-  casRecord.js         ← ALGORITHM 4: CAS record totals
-  routes/              ← one file per kind of user; each turns web requests into actions
-    authRoutes.js  projectRoutes.js  teacherRoutes.js  principalRoutes.js  adminRoutes.js
-public/                ← what the browser downloads
-  index.html  app.js  styles.css
-scripts/seed.js        ← demo data
-tests/                 ← automated tests (T01–T29)
-docs/                  ← Criteria C and D, diagrams, screenshots, this guide
-```
+The app has three parts:
 
-**The one idea to hold on to:** the **browser** (`public/app.js`) never touches the database. It sends a *request* such as "POST /api/projects/2/join". The **server** (`src/…`) checks who you are, checks the rules, reads and writes the **database**, and sends back a *response*, either data or `{ error: "reason" }`.
+1. **The browser** (`public/`) shows the screens.
+2. **The server** (`server.js` and `src/`) checks the rules.
+3. **The MySQL database** (`cas_finder`) stores everything.
 
-## Part 3: JavaScript primer, using examples from this project
+The browser never touches the database directly. It sends a request such as *"POST /api/projects/2/join"*. The server checks who you are and whether you're allowed, then reads or writes the database. Finally it sends back either data or `{ error: "the reason" }`.
 
-| Syntax | What it means | Where it appears |
-|---|---|---|
-| `const x = 5;` / `let y = 0;` | `const` can't be reassigned; `let` can. | everywhere; `let score = 0` in search.js:25 |
-| `` `Hello ${name}` `` | **Template literal**: a string with values inserted at `${…}`. | `` `${salt}:${hash}` `` auth.js:13 |
-| `(a, b) => a + b` | **Arrow function**: a short way to write a function. | sort comparator search.js:53 |
-| `function f(x = 5)` | **Default parameter**: x is 5 if no value is given. | `options = {}` app.js:8 |
-| `const { a, b } = obj;` | **Destructuring**: take properties out of an object into variables. | `const { createDb } = require('./src/db')` |
-| `const [salt, hash] = text.split(':')` | Destructuring an array. | auth.js:19 |
-| `{ ...project, score }` | **Spread**: copy all properties of `project`, then add `score`. | search.js:50 |
-| `function f(...roles)` | **Rest parameter**: all arguments collected into an array. | `requireRole(...roles)` auth.js:69 |
-| `a ?? b` | Use `a`, unless it is `null`/`undefined`, then use `b`. | `body.fee ?? 0` validation.js:75 |
-| `a \|\| b` | Use `a` if it is "truthy", otherwise `b`. | `process.env.PORT \|\| 3000` |
-| `cond ? x : y` | **Ternary**: if `cond` then `x` else `y`. | validation.js:17 |
-| `arr.map(f)` / `arr.filter(f)` | New array with `f` applied to each item / only items where `f` is true. | app.js (browser) many places |
-| `arr.includes(x)` | Is `x` in the array? | `ROLES.includes(role)` joinRules.js:29 |
-| `arr.sort((a, b) => …)` | Sort; a negative result puts `a` first, positive puts `b` first. | search.js:53 |
-| `/^\d{4}-\d{2}-\d{2}$/` | **Regular expression** (a text pattern). `^` start, `\d` digit, `{4}` exactly 4, `$` end. | dates.js:7 |
-| `require('x')` / `module.exports = {…}` | Import from / export to other files (CommonJS modules). | top and bottom of every file |
-| `async function` / `await` | `await` pauses the function until a slow task (like a network request) finishes, without freezing the page. | `await fetch(url)` public/app.js:17 |
-| `try { … } catch (err) { … }` | If anything in `try` throws an error, jump to `catch`. | public/app.js:108-112 |
-| `new Map()` | A key → value table. | projectRoutes.js:76 |
-
-## Part 4: Following one click through the whole system
-
-**Scenario:** Rizky is logged in and clicks **"Join as volunteer"** on the Batik Mural Painting project (id 2).
-
-| Step | File:line | What happens |
-|---|---|---|
-| 1 | `public/app.js:270` | When the project page was drawn, every `<button data-role="…">` got an `onclick` function. |
-| 2 | `public/app.js:273` | The click runs `api('POST', '/api/projects/2/join', { role: 'volunteer' })`. |
-| 3 | `public/app.js:11-21` | `api()` turns `{ role: 'volunteer' }` into JSON text and calls `fetch`. The browser automatically attaches Rizky's `cas_session` cookie. |
-| 4 | `src/app.js:13` | On the server, `express.json()` turns the JSON text back into `req.body = { role: 'volunteer' }`. |
-| 5 | `src/app.js:14` → `src/auth.js:60-63` | `loadUser` reads the cookie, looks up the token in `sessions`, and sets `req.user = { id: 6, name: 'Rizky Pratama', role: 'student', school_id: 1, … }`. |
-| 6 | `src/app.js:22` | The path starts with `/api`, so Express hands the request to `projectRoutes`. |
-| 7 | `src/routes/projectRoutes.js:131` | This route matches `POST /projects/:id/join`, so `req.params.id = '2'`. First `requireRole('student')` runs (auth.js:69-76). Rizky is a student, so `next()` is called. |
-| 8 | `projectRoutes.js:132-133` | It loads project 2 from the database. If it didn't exist, it would answer 404. |
-| 9 | `projectRoutes.js:135-143` | It gathers everything the rules need: Rizky's existing request (none), the accepted counts, and Rizky's schedule. Then it calls `checkJoinRequest`. |
-| 10 | `src/joinRules.js:27-64` | Rules 1–8 are checked in order. All pass, so it returns `{ ok: true }`. |
-| 11 | `projectRoutes.js:146-148` | It INSERTs a `pending` membership and answers `201 { message: 'Request sent…' }`. |
-| 12 | `public/app.js:274-275` | Back in the browser, `api()` returns the data. A green message is shown and the page is redrawn, now showing "Your request … is pending". |
-
-If a rule had failed, for example the deadline had passed, step 10 would return `{ ok: false, status: 409, reason: 'The application deadline has passed.' }`. Line 144 would send that as `409 { error: … }`. In the browser, `api()` would **throw** (app.js:19), the `catch` would run, and `showMessage` would show the reason in red.
-
-## Part 5: Each file, line by line
-
-Every line in the source has its own comment. The tables below explain the *why* and the trickier lines.
-
-### `server.js`: the starting point
-
-| Lines | Explanation |
+| File | Job |
 |---|---|
-| 2-7 | Load Node's file-system and path modules plus our own modules. |
-| 9 | Use the `PORT` environment variable if one is set, otherwise 3000. `Number(undefined)` is `NaN`, which is falsy, so `\|\|` picks 3000. |
-| 10 | The database file path. `__dirname` is the folder this file is in, so the path works from any working directory. |
-| 12 | Create the `data/` folder. `recursive: true` means "no error if it already exists". |
-| 13 | Open the database (see db.js). |
-| 16-19 | `COUNT(*)` of users. If it's 0, this is the very first run, so fill the database with demo data. |
-| 22 | Housekeeping: delete login sessions that have already expired. |
-| 24-26 | Build the app and start listening. The arrow function runs once the server is ready. |
+| `config.js` | Your MySQL username and password |
+| `server.js` | Starts everything |
+| `src/app.js` | Connects all the parts |
+| `src/db.js` | The database tables |
+| `src/auth.js` | Passwords, logins, roles |
+| `src/validation.js`, `src/dates.js` | Checks what users type |
+| `src/search.js` | Algorithm 1: search and ranking |
+| `src/joinRules.js` | Algorithm 2: may this student join? |
+| `src/statusFlow.js` | Algorithm 3: pending → approved → ongoing → completed |
+| `src/casRecord.js` | Algorithm 4: CAS hours totals |
+| `src/routes/` | One file per type of user (the API) |
+| `public/app.js` | Draws every screen in the browser |
+| `tests/` | Tests T01–T30 |
 
-### `src/app.js`: assembling the application
+## 3. JavaScript you need to know
 
-| Lines | Explanation |
+| Code | Meaning |
 |---|---|
-| 8 | `createApp` is a **function** instead of code that runs immediately. That lets tests create an app with a test database and a fixed date (dependency injection). |
-| 10 | `today` is a *function*. In real use it's `localToday`; tests pass `() => '2026-10-01'`. |
-| 13-15 | **Middleware** runs on *every* request, in order: read JSON, find the logged-in user, serve files from `public/`. |
-| 18-22 | Each route file is a function that receives `db` and returns a router. `app.use('/api/teacher', …)` means "requests starting with /api/teacher go here". |
-| 25 | Any `/api/...` address that no router answered gets a 404. |
-| 28-33 | An **error-handling middleware** has 4 parameters. Bad JSON gives 400, a too-large body gives 413, and anything unexpected gives 500 with a generic message. The real details are logged, never shown to users. |
+| `const x = 5` / `let y = 0` | `const` can't change; `let` can. |
+| `` `Hi ${name}` `` | A string with a value placed inside it. |
+| `(a, b) => a + b` | A short way to write a function. |
+| `const { a, b } = obj` | Take `a` and `b` out of an object. |
+| `{ ...project, score }` | Copy an object and add a field to it. |
+| `a ?? b` | Use `a`, or `b` if `a` is missing. |
+| `cond ? x : y` | If `cond` then `x`, otherwise `y`. |
+| `list.map`, `list.filter`, `list.includes`, `list.sort` | Change each item; keep some items; check if an item is there; sort the list. |
+| `/^\d{4}-\d{2}-\d{2}$/` | A regular expression: a pattern for "YYYY-MM-DD". |
+| `require(...)`, `module.exports` | Use code from another file; share code with other files. |
+| `async` / `await` | Wait for something slow (like the server) without freezing the page. |
+| `try { } catch (err) { }` | If something fails inside `try`, run `catch`. |
 
-### `src/db.js`: the database
+## 4. One click, followed through every file
 
-| Lines | Explanation |
-|---|---|
-| 4 | `DatabaseSync` is SQLite built into Node 22. "Sync" means each query finishes before the next line runs. |
-| 8-65 | The schema. `PRIMARY KEY AUTOINCREMENT` gives each row a unique id. `REFERENCES` creates a foreign key. `CHECK (role IN (…))` refuses any other value. `UNIQUE (project_id, user_id)` makes a second request by the same student impossible. |
-| 22 | `password_hash` may be NULL, meaning "added by the principal but not activated yet". |
-| 24 | `UNIQUE (school_id, login_id)`: two schools can both have an "S1001", but one school can't have two. |
-| 70-72 | Open the file, switch foreign-key checking on (SQLite has it off by default), and create any missing tables. |
+**Scenario:** Rizky clicks **"Join as volunteer"** on the Batik Mural Painting project.
 
-### `src/auth.js`: security
+1. **`public/app.js` → `showProject()`.** Each Join button got an `onclick` function when the page was drawn.
+2. That function calls `api('POST', '/api/projects/2/join', { role: 'volunteer' })`.
+3. **`api()`** turns the object into JSON and sends it with `fetch`. The browser adds Rizky's login cookie automatically.
+4. **`src/app.js`.** `express.json()` reads the body. `loadUser()` (in `auth.js`) uses the cookie to find out that this is Rizky.
+5. **`projectRoutes.js` → the `/projects/:id/join` route.** `requireRole('student')` checks that Rizky is a student.
+6. The route loads the project and gathers what the rules need: Rizky's earlier request, the places taken and Rizky's other projects.
+7. **`joinRules.js` → `checkJoinRequest()`** checks 8 rules in order. All pass, so it returns `{ ok: true }`.
+8. The route saves a `pending` request and replies `201` with a message.
+9. Back in the browser, a green message appears and the page redraws.
 
-| Lines | Explanation |
-|---|---|
-| 8-14 | **Hashing.** A random *salt* is generated, then `scrypt(password, salt)` is computed. Only `salt:hash` is stored. You can't reverse a hash to get the password back. |
-| 17-25 | **Checking.** Split the stored value, hash the typed password with the *same* salt, and compare. `timingSafeEqual` always takes the same time, so attackers can't measure how many bytes matched. |
-| 28-34 | **Sessions.** 32 random bytes is 64 hex characters, so the token is practically impossible to guess. It's saved with an expiry time 8 hours ahead. |
-| 37-46 | Turns `"a=1; cas_session=abc"` into `{ a: '1', cas_session: 'abc' }`. `indexOf('=')` finds the first `=`, and `slice` cuts the text into name and value. |
-| 49-65 | `loadUser(db)` **returns a function** (middleware). The SQL only finds the user if the token matches, hasn't expired, the user is active, *and* their school is active. Line 62: if there's no token, `req.user` is `null`. |
-| 69-77 | `requireRole('teacher')` returns a middleware that answers 401 (not logged in) or 403 (wrong role), or calls `next()` to let the route run. |
-| 80-89 | `publicUser` picks only safe fields, so the password hash is never sent to the browser. |
+If a rule fails (say the deadline has passed), step 7 returns the reason. The server replies `409 { error: "The application deadline has passed." }`. `api()` throws an error, and the screen shows the reason in red.
+
+## 5. Each file explained
+
+### `server.js`
+Connects to MySQL using `config.js`. On the very first run it fills the database with demo data (`seedDemo`), deletes expired logins, and starts the web server on port 3000. Because talking to MySQL takes time, the code uses `async`/`await`.
+
+### `config.js`
+Holds the MySQL host, port, username, password and database name. Change it to match your laptop.
+
+### `src/app.js` → `createApp(db, options)`
+- `createApp` is a function, so the tests can build an app with a test database and a fixed date.
+- `app.use(...)` lines run on every request: read JSON, find the logged-in user, serve the `public/` files.
+- Each route file handles one group of addresses, for example `/api/teacher`.
+- The last handler catches errors. Bad JSON gets 400, too big gets 413, anything else gets 500. Users never see the technical details.
+
+### `src/db.js`
+- **`createDb(config)`**: creates the `cas_finder` database if it's missing, then creates the five tables (schools, users, projects, memberships, sessions).
+- `AUTO_INCREMENT PRIMARY KEY` gives each row its own number. `FOREIGN KEY ... REFERENCES` links tables together.
+- `ENUM(...)` only allows certain values, for example the three strands.
+- `DATE` columns are returned as `"YYYY-MM-DD"` text (`dateStrings: true`), so dates can be compared like strings.
+- **`db.get`** returns one row, **`db.all`** returns all rows, and **`db.run`** is for INSERT, UPDATE and DELETE. Every call needs `await`.
+- **`db.transaction`** runs several queries as one unit. Either all of them are saved, or none are if something fails.
+- `UNIQUE (project_id, user_id)` means a student can only ask once per project.
+- `password_hash` is empty until the student activates the account.
+
+### `src/auth.js`
+- **`hashPassword`**: makes a random *salt* and stores `salt:scrypt(password)`. The real password is never saved.
+- **`verifyPassword`**: hashes the typed password with the same salt and compares the result.
+- **`createSession`**: makes a long random token and saves it with an expiry time 8 hours ahead.
+- **`loadUser`**: finds the user from the cookie on every request.
+- **`requireRole('teacher')`**: blocks anyone else. Not logged in gives 401; wrong role gives 403.
+- **`publicUser`**: only safe fields are sent to the browser, never the password hash.
 
 ### `src/dates.js`
-
-| Lines | Explanation |
-|---|---|
-| 7 | The pattern for "4 digits - 2 digits - 2 digits". |
-| 12 | Wrong type or wrong shape: not valid. |
-| 14 | The `Z` means UTC, so the time zone can't move the date to the day before. |
-| 17 | **The clever bit.** `new Date('2026-02-30')` silently becomes 2 March. Converting back to text and comparing with the original catches impossible dates. |
-| 21-25 | Add days using UTC, which handles month and year ends (31 Dec + 1 = 1 Jan). |
-| 27-34 | Today's date in *local* time. Jakarta is on WIB (UTC+7): before 7 a.m. WIB the UTC date is still yesterday, so using UTC would keep deadlines open a day too long. `padStart(2, '0')` turns `9` into `09`. |
-| 38-40 | **Overlap test.** Two ranges overlap unless one ends before the other starts. Written positively: A starts on or before B ends, *and* B starts on or before A ends. Because dates are `YYYY-MM-DD` text, `<=` compares them correctly. |
+- **`isValidDate`**: JavaScript quietly turns 30 February into 2 March, so the function converts the date back to text and checks it hasn't changed.
+- **`localToday`**: uses Jakarta time (WIB), not UTC. Before 7 a.m. UTC still thinks it's yesterday.
+- **`datesOverlap`**: two date ranges overlap if `startA <= endB && startB <= endA`.
 
 ### `src/validation.js`
+- **`cleanText`**: trims spaces and checks the length.
+- **`toWholeNumber`**: rejects `4.5` and `abc`.
+- **`passwordProblem`**: at least 8 characters, with a letter and a number.
+- **`cleanLoginId`**: turns `s1001` into `S1001`.
+- **`AREAS`**: the Jakarta / Jabodetabek areas a school can be in. **`MAX_FEE`**: Rp 10.000.000.
+- **`validateProject`**: collects **all** the errors in the form, not just the first one. It checks that today ≤ deadline ≤ start date ≤ end date.
 
-| Lines | Explanation |
-|---|---|
-| 7-11 | `AREAS` is the list of Jakarta/Jabodetabek areas a school can be in (the admin's add-school form must use one). `MAX_FEE` is Rp 10.000.000, since fees are in Indonesian Rupiah. |
-| 14-18 | `cleanText` trims and squashes spaces, then checks the length. It returns the clean text or `null`. |
-| 21-24 | `Number('4.5')` is 4.5, and `Number.isInteger(4.5)` is false, so it's rejected. `Number('abc')` is NaN and is rejected too. |
-| 27-32 | Password rules, each with its own message. `/[A-Za-z]/` = "contains a letter", `/\d/` = "contains a digit". |
-| 35-40 | School IDs are upper-cased so that `s1001` and `S1001` are the same. Only letters and digits are allowed. |
-| 44-96 | `validateProject` pushes **every** problem into `errors` instead of stopping at the first. Lines 63-70 check the date order only when all three dates are real; otherwise those comparisons would be meaningless. It returns both the errors and the cleaned values. |
+### `src/search.js` (Algorithm 1)
+- **`normalise`**: lower-cases the text and removes accents and punctuation, so `"Café Clean-Up!"` becomes `"cafe clean up"`.
+- **`scoreProject`**: each search word found in the title gives +3, and found anywhere else gives +1. If any word is missing completely, the score is 0. The "anywhere else" text includes the school's area, so "jakarta selatan" works.
+- **`searchProjects`**: skips projects that fail a filter (strand, school, still open), scores the rest, then sorts them. The highest score comes first; if two scores are equal, the project starting soonest comes first.
 
-### `src/search.js`: Algorithm 1
+Example search for `clean`:
 
-| Lines | Explanation |
-|---|---|
-| 6-14 | `normalise` is a chain of string methods, each acting on the result of the previous one. `'NFD'` splits "é" into "e" plus a separate accent character. The next line deletes all accent characters (Unicode range U+0300–U+036F). |
-| 19-32 | `scoreProject`: +3 for each word found in the title, +1 if found elsewhere. If a word is missing everywhere, it returns 0 straight away (an AND search). `includes` finds partial words ("foot" in "futsal"). |
-| 23-24 | `rest` joins every field except the title, including the school's **area**, so searching `jakarta selatan` finds Senayan IB projects. `.map((part) => part ?? '')` turns missing fields into empty text so the word "undefined" never appears. |
-| 42 | `"Beach  Clean"` becomes `"beach clean"`, then `["beach", "clean"]`. `filter(Boolean)` removes empty strings, so a blank search gives `[]`. |
-| 44-51 | One pass over all projects. Each `continue` skips a project that fails a filter. Matching projects are copied with their score. |
-| 53 | **Two-level sort.** `b.score - a.score` puts the highest score first. When scores tie it is `0`, which is falsy, so `\|\|` moves on to comparing start dates alphabetically, which for `YYYY-MM-DD` is the same as by date. |
+| Project | "clean" in title? | Elsewhere? | Score |
+|---|---|---|---|
+| Ancol Beach Clean-Up Drive | yes | – | 3 |
+| Batik Mural Painting (test data says "clean oceans") | no | yes | 1 |
 
-**Worked example.** The query is `"clean"`. The projects (from the sample data in test T08) are *Ancol Beach Clean-Up Drive* (title contains "clean") and *Batik Mural Painting*, whose description mentions "clean oceans".
+### `src/joinRules.js` (Algorithm 2)
+- **`findClash`**: returns the first of the student's projects whose dates overlap, or `null`.
+- **`checkJoinRequest`** checks 8 rules, one after another:
+  1. valid role;
+  2. own school or an interschool project;
+  3. project not hidden or closed;
+  4. not your own project;
+  5. no request already;
+  6. deadline not passed;
+  7. a place is free;
+  8. no date clash.
+- `` project[`cap_${role}`] `` picks the right capacity, for example `cap_volunteer`.
 
-| Project | normalised title | "clean" in title? | in rest? | score |
-|---|---|---|---|---|
-| Ancol Beach… | `ancol beach clean up drive` | yes | – | 3 |
-| Batik Mural… | `batik mural painting` | no | yes | 1 |
+### `src/statusFlow.js` (Algorithm 3)
+A table lists where each status may go next, and `canMove(from, to)` checks it. Skipping a stage or going backwards is refused.
 
-After sorting, the order is Ancol (3), then Mural (1). This is exactly what test T08 checks.
+### `src/casRecord.js` (Algorithm 4)
+Sorts the student's projects by date and adds up hours per strand. Only *completed* projects count.
 
-### `src/joinRules.js`: Algorithm 2
+### `src/routes/` (the API)
+Every route follows the same steps: read the input, load data, check the rules (send an error if one fails), save, reply.
 
-| Lines | Explanation |
-|---|---|
-| 8-16 | `findClash` loops over the student's commitments and returns the **first** clashing project (so the message can name it), or `null`. |
-| 27 | The parameter `{ project, user, role, … }` is **destructured**: the caller passes one object and the function gets named variables. |
-| 29-61 | Eight rules, each with an early `return`. The order matters: "not found" comes before "deadline passed", so a hidden project never reveals any detail about itself. |
-| 38 | The rule added after test T22 found a privacy bug (see Criterion D4). |
-| 54 | `` `cap_${role}` `` builds the column name, so `role = 'volunteer'` reads `project.cap_volunteer`. |
-| 55 | `counts[role] \|\| 0` treats a missing count as 0. `>=` means "the last place is still allowed; once full, refuse". |
-
-### `src/statusFlow.js` and `src/casRecord.js`: Algorithms 3 and 4
-
-- statusFlow.js:8-14: each state lists where it can go next. Line 18: `TRANSITIONS[from] || []` means an unknown state gets an empty list, so `includes` is false.
-- casRecord.js:7: all totals start at 0, so every strand shows even with no activities.
-- casRecord.js:11: `rows.slice()` copies the array before sorting, because `sort` changes the array it is called on.
-- casRecord.js:16-20: only completed projects add hours. `totals[row.strand]` uses the strand name as the key.
-
-### `src/routes/*.js`: the API
-
-Every route follows the same pattern, so once you understand one you understand them all:
-
-```js
-router.post('/path/:id', requireRole('role'), (req, res) => {
-  // 1. read input:     req.params.id, req.body.something, req.user
-  // 2. load data:      db.prepare('SELECT … WHERE id = ?').get(id)
-  // 3. check rules:    if (bad) return res.status(4xx).json({ error: 'why' });
-  // 4. change data:    db.prepare('UPDATE/INSERT …').run(…)
-  // 5. answer:         res.status(200 or 201).json({ message or data })
-});
-```
-
-| Status code | Meaning here |
+| Code | Meaning |
 |---|---|
 | 200 / 201 | OK / created |
-| 400 | Your input is invalid |
+| 400 | Your input is wrong |
 | 401 | Not logged in |
-| 403 | Logged in, but your role can't do this |
-| 404 | Doesn't exist, *or* you aren't allowed to know it exists |
-| 409 | Valid input, but it conflicts with the current state (full, duplicate, wrong status) |
-| 413 | Request too large |
+| 403 | Your role can't do this |
+| 404 | Not found (or you're not allowed to know it exists) |
+| 409 | Clashes with the current state (full, duplicate, wrong stage) |
 
-Points worth knowing:
+- **Accepting a request** re-checks capacity and clashes, because the situation may have changed since the student asked. It runs inside a transaction, and `SELECT ... FOR UPDATE` *locks* the row. If two people click Accept for the last place at the same moment, the second has to wait and then sees that the place is gone. Test T30 checks this: without the lock it failed 4 times out of 5.
+- **Removing** a user or school sets `is_active = 0` (a soft delete). Their CAS history stays, and they're logged out immediately.
 
-- `projectRoutes.js:16-39`: the queries are **prepared once** and reused, which is faster than preparing them on every request.
-- `projectRoutes.js:34-39`: `UNION` combines two queries. The schedule is "projects I'm accepted into" plus "projects I created".
-- `projectRoutes.js:58-85` (search): first SQL picks only the projects you may see, then `searchProjects` ranks them, then one `GROUP BY` query counts members for *all* projects at once instead of one query per project.
-- `projectRoutes.js:152-177` (accept/reject): capacity and clashes are **re-checked** at the moment of accepting.
-- `teacherRoutes.js`: `router.use(requireRole('teacher'))` protects every route in the file with one line.
-- `principalRoutes.js` / `adminRoutes.js`: removal is a **soft delete** (`is_active = 0`), and the person's sessions are deleted so they're logged out immediately.
+### `public/app.js` (the browser)
+- **`api()`**: the only function that talks to the server.
+- **`esc()`**: makes user text safe, so a title like `<script>` shows as text and never runs.
+- **`rupiah()`**: turns `50000` into `Rp 50.000`. **`todayLocal()`**: today's date in WIB.
+- **`router()`**: reads the part of the address after `#` (for example `#/project/5`) and draws that screen.
+- **`showLogin`, `showBrowse`, `showProject`, `showCreate`, `showMine`, `showRecord`, `showTeacher`, `showMembers`, `showSchools`**: one function per screen.
 
-### `public/app.js`: the browser side
+### `tests/`
+`withServer` makes a new temporary MySQL database (`cas_test_...`) and server for each test, and deletes the database afterwards. `assert.equal(actual, expected)` fails the test if the two values differ.
 
-| Lines | Explanation |
-|---|---|
-| 4-5 | Two pieces of state: who is logged in, and the `<main>` element that screens are drawn into. |
-| 11-21 | `api()` is the only place that talks to the server. If `response.ok` is false (status 400 or above), it **throws** an Error carrying the server's reason. |
-| 25-28 | `esc()` replaces `< > & " '` with HTML entities, so user text can never become HTML or script (XSS protection). Every `${…}` holding user data goes through `esc`. |
-| 32-39 | `showMessage` uses `textContent`, which is always safe, and hides the message after 6 s. |
-| 42-44 | `FormData` reads every named input of a form, and `Object.fromEntries` turns it into an object. |
-| 47-55 | `rupiah(50000)` gives `"Rp 50.000"` (`toLocaleString('id-ID')` uses Indonesian dots between thousands). `todayLocal()` gives today's date in WIB for the date pickers. |
-| 63-64 | The same Jabodetabek `AREAS` list as the server, used for the admin's area drop-down. |
-| 71-76 | Which menu links each role sees. |
-| 94-113 | **The router.** `location.hash` is the part after `#`. `"#/project/5".split('/')` is `["#", "project", "5"]`, and the leading comma in `[, page, id]` skips the first item. Logged-out users only see login or activate. Pages not allowed for your role send you to your home screen. |
-| 123-147 | Login form. `event.preventDefault()` stops the browser's normal reload so JavaScript can send the data. |
-| 198-225 | Search screen. `URLSearchParams` turns `{ q: 'beach', strand: '' }` into `q=beach&strand=`. |
-| 229-289 | Project screen. It shows Join buttons only if you're a student, not the creator, not already requested, and the project is open. Full roles get `disabled`. The creator sees Accept/Reject. |
-| 367-411 | Teacher screen. `nextStep` mirrors statusFlow.js, so only the valid next button appears. Rejecting asks for a reason with `prompt()`. |
-| 504-510 | Start-up. Redraw whenever the hash changes, then ask the server "who am I?" (the cookie may still be valid) and draw the first screen. |
+## 6. Try these
 
-### `tests/`: how to read a test
+1. In `scoreProject`, change `score += 3` to `score += 1`, run `npm test`, and work out which test fails and why.
+2. Delete rule 8 in `checkJoinRequest`. Which tests fail?
+3. Add a rule: "a student can have at most 3 pending requests". Add a test for it too.
 
-```js
-test('T23 (SC5) … capacity can never be exceeded', () => withServer(async ({ request, login }) => {
-  const putri = await login(GMIS, 'S1002');                     // get a session cookie
-  ...
-  assert.equal(full.status, 409);                                    // the check: actual vs expected
-}));
-```
+## 7. Questions your teacher might ask
 
-`withServer` starts a fresh server with a brand-new in-memory database for each test, then closes it, so tests can't affect each other. `assert.equal(a, b)` fails the test if `a !== b`.
-
-## Part 6: Things to try (to prove to yourself you understand it)
-
-1. Change the title weight in search.js:27 from `3` to `1`. Run `npm test`. Which test fails, and why?
-2. Delete rule 8 (joinRules.js:58-61). Which tests fail?
-3. Add a new strand-independent rule, for example "a student can have at most 3 pending requests". Write the rule in `joinRules.js`, pass the count in from `projectRoutes.js`, and add a test.
-4. In the browser, open DevTools → Network and watch the requests while you use the app.
-
-## Part 7: Viva questions your teacher might ask
-
-**Why JavaScript on both sides?** One language for client and server. JSON is JavaScript's native data format. The same date-string conventions work everywhere.
-
-**Why not store the password itself?** If the database leaked, every password would be exposed. A salted scrypt hash can't be reversed, and the salt means identical passwords get different hashes.
-
-**What stops a student from calling the teacher API directly?** `requireRole('teacher')` on the server. Hiding the buttons in the browser is only for convenience; the server is the real guard. Test T17 calls the API directly and gets 403.
-
-**What is SQL injection and how is it prevented?** It means typing SQL into a form so that it becomes part of a query. Every query here uses `?` placeholders, so typed text is always treated as data.
-
-**How does the clash check work?** Two ranges overlap when `startA <= endB && startB <= endA`. The system checks the new project against every approved or ongoing project the student is accepted into or created.
-
-**Why re-check capacity when accepting?** Two students can both request the last place. The places are only "taken" on acceptance, so the second acceptance must be refused (T23).
-
-**Why "not found" instead of "forbidden" for pending projects?** So other students can't even confirm that a hidden project exists. This was a real bug that testing caught (T22).
-
-**What is the time complexity of search?** O(n) to scan n projects, plus O(k log k) to sort the k matches. In practice that's about 63 ms for 20,000 projects.
-
-**What would you improve?** See Criterion E. Examples: notifications when a request is decided, PostgreSQL for many schools at once, password reset, and digital certificates generated from the CAS record.
+- **Why JavaScript for everything?** One language on both sides, and JSON is built into JavaScript.
+- **Why hash passwords?** If the database leaked, nobody could read the passwords.
+- **What stops a student from using teacher features?** `requireRole` on the server. Hiding buttons in the browser isn't enough on its own.
+- **What is SQL injection?** Typing SQL into a form to break a query. The `?` placeholders stop it.
+- **How does the clash check work?** `startA <= endB && startB <= endA`.
+- **Why re-check places when accepting?** Two students can ask for the last place; only one can be accepted.
+- **What does `FOR UPDATE` do?** It locks the row until the transaction ends, so two acceptances can't happen at exactly the same time.
+- **Why MySQL?** It's a real database server that many users can use at once, and it supports transactions and foreign keys.
+- **Why "not found" for pending projects?** So other students can't tell that a hidden project exists. Test T22 found this bug.
+- **How fast is search?** It looks at each project once (O(n)) and then sorts the matches. 20,000 projects take well under a second.
