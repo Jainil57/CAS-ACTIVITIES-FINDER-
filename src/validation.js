@@ -5,6 +5,10 @@ const { isValidDate } = require('./dates');
 
 const STRANDS = ['Creativity', 'Activity', 'Service'];   // the three CAS strands
 const ROLES = ['participant', 'volunteer', 'organizer']; // ways a student can join a project
+// Areas of Jakarta and its surrounding cities (Jabodetabek) where IBDP schools are located.
+const AREAS = ['Jakarta Pusat', 'Jakarta Utara', 'Jakarta Barat', 'Jakarta Selatan', 'Jakarta Timur',
+  'Bogor', 'Depok', 'Tangerang', 'Tangerang Selatan', 'Bekasi'];
+const MAX_FEE = 10000000;                                // Rp 10.000.000 — fees are in Indonesian Rupiah
 
 // Trims spaces and checks the length is between min and max characters. Returns the text or null.
 function cleanText(value, min, max) {
@@ -68,8 +72,8 @@ function validateProject(input, today) {
   const hours = toWholeNumber(body.hours, 1, 200);
   if (hours === null) errors.push('CAS hours must be a whole number from 1 to 200.');
 
-  const fee = toWholeNumber(body.fee ?? 0, 0, 100000);   // "??" means: use 0 if fee was not sent
-  if (fee === null) errors.push('Fee must be a whole number of rupees from 0 to 100000.');
+  const fee = toWholeNumber(body.fee ?? 0, 0, MAX_FEE);  // "??" means: use 0 if fee was not sent
+  if (fee === null) errors.push('Fee must be a whole number of Rupiah from 0 to 10000000.');
 
   const capParticipant = toWholeNumber(body.capParticipant, 0, 500);
   const capVolunteer = toWholeNumber(body.capVolunteer, 0, 100);
@@ -92,5 +96,5 @@ function validateProject(input, today) {
 }
 
 module.exports = {
-  STRANDS, ROLES, cleanText, toWholeNumber, passwordProblem, cleanLoginId, validateProject,
+  STRANDS, ROLES, AREAS, MAX_FEE, cleanText, toWholeNumber, passwordProblem, cleanLoginId, validateProject,
 };

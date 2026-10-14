@@ -45,10 +45,10 @@ async function startTestServer(today = TODAY) {
 // A valid "create project" form; tests copy it and change one field at a time.
 function validProject(overrides = {}) {
   return {
-    title: 'Tree Planting Day',
-    description: 'Plant 100 native saplings with the municipal garden department.',
+    title: 'Mangrove Planting Day',
+    description: 'Plant 100 mangrove seedlings with the Angke Kapuk conservation rangers.',
     strand: 'Service',
-    location: 'Aarey Colony',
+    location: 'Taman Wisata Alam Angke Kapuk, Jakarta Utara',
     startDate: '2026-11-20',
     endDate: '2026-11-20',
     applyDeadline: '2026-11-15',

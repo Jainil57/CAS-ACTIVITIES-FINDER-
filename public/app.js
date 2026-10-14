@@ -43,10 +43,25 @@ function formData(form) {
   return Object.fromEntries(new FormData(form).entries());
 }
 
+// 50000 → "Rp 50.000" (Indonesian format uses dots between thousands).
+function rupiah(amount) {
+  return `Rp ${Number(amount).toLocaleString('id-ID')}`;
+}
+
+// Today in local Jakarta time (WIB) as "YYYY-MM-DD" — toISOString() would give the UTC date instead.
+function todayLocal() {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
 // "2026-10-24" → "24 Oct 2026" (easier to read).
 function niceDate(text) {
   return new Date(`${text}T00:00:00`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
+
+// The Jabodetabek areas offered when adding a school (the server checks the same list).
+const AREAS = ['Jakarta Pusat', 'Jakarta Utara', 'Jakarta Barat', 'Jakarta Selatan', 'Jakarta Timur',
+  'Bogor', 'Depok', 'Tangerang', 'Tangerang Selatan', 'Bekasi'];
 
 const strandTag = (strand) => `<span class="tag ${esc(strand)}">${esc(strand)}</span>`;
 
@@ -101,7 +116,7 @@ async function router() {
 
 async function schoolOptions(includeAdmin) {
   const schools = await api('GET', '/api/auth/schools');
-  const options = schools.map((s) => `<option value="${s.id}">${esc(s.name)}</option>`).join('');
+  const options = schools.map((s) => `<option value="${s.id}">${esc(s.name)} — ${esc(s.area)}</option>`).join('');
   return includeAdmin ? `${options}<option value="">Service provider (platform admin)</option>` : options;
 }
 
@@ -122,6 +137,7 @@ async function showLogin() {
     try {
       const data = await api('POST', '/api/auth/login', formData(event.target));
       currentUser = data.user;
+      document.getElementById('message').hidden = true;   // clear any old "wrong password" message
       location.hash = `#/${NAV[currentUser.role][0][0]}`;
       router();                                      // the hash may not change, so draw the screen directly
     } catch (err) {
@@ -173,8 +189,8 @@ function projectCard(p) {
       <div>${strandTag(p.strand)}${p.interschool ? '<span class="tag light">Interschool</span>' : ''}
            ${p.status === 'ongoing' ? '<span class="tag light">Ongoing</span>' : ''}</div>
       <h3><a href="#/project/${p.id}">${esc(p.title)}</a></h3>
-      <div class="meta">${esc(p.schoolName)} · ${esc(p.location)}</div>
-      <div class="meta">${niceDate(p.startDate)} – ${niceDate(p.endDate)} · ${p.hours} CAS hours${p.fee ? ` · ₹${p.fee}` : ''}</div>
+      <div class="meta">${esc(p.schoolName)} (${esc(p.schoolArea)}) · ${esc(p.location)}</div>
+      <div class="meta">${niceDate(p.startDate)} – ${niceDate(p.endDate)} · ${p.hours} CAS hours${p.fee ? ` · ${rupiah(p.fee)}` : ''}</div>
       <div class="meta">Apply by ${niceDate(p.applyDeadline)} · ${placesText(p.places)}</div>
     </article>`;
 }
@@ -183,7 +199,7 @@ async function showBrowse() {
   view.innerHTML = `
     <h1>Find CAS projects</h1>
     <form class="panel grid" id="search-form">
-      <label>Keywords <input name="q" placeholder="e.g. beach, football, painting"></label>
+      <label>Keywords <input name="q" placeholder="e.g. ancol, futsal, batik, jakarta selatan"></label>
       <label>Strand
         <select name="strand"><option value="">All strands</option>
           <option>Creativity</option><option>Activity</option><option>Service</option></select></label>
@@ -243,7 +259,7 @@ async function showProject(id) {
       <h1>${esc(p.title)}</h1>
       <p>${esc(p.description)}</p>
       <p class="meta">Organised by ${esc(p.creatorName)}, ${esc(p.schoolName)} · ${esc(p.location)}<br>
-        ${niceDate(p.startDate)} – ${niceDate(p.endDate)} · ${p.hours} CAS hours · ${p.fee ? `Fee ₹${p.fee}` : 'Free'}<br>
+        ${niceDate(p.startDate)} – ${niceDate(p.endDate)} · ${p.hours} CAS hours · ${p.fee ? `Fee ${rupiah(p.fee)}` : 'Free'}<br>
         Apply by ${niceDate(p.applyDeadline)} · ${placesText(p.places)}</p>
       ${p.teacherComment ? `<p class="meta">Coordinator's comment: ${esc(p.teacherComment)}</p>` : ''}
       ${joinHtml}
@@ -275,7 +291,7 @@ async function showProject(id) {
 // ======================= student: create project =======================
 
 function showCreate() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayLocal();
   view.innerHTML = `
     <h1>Create a CAS project</h1>
     <form class="panel grid" id="create-form">
@@ -287,7 +303,7 @@ function showCreate() {
       <label>End date <input type="date" name="endDate" required min="${today}"></label>
       <label>Apply by <input type="date" name="applyDeadline" required min="${today}"></label>
       <label>CAS hours <input type="number" name="hours" required min="1" max="200" value="4"></label>
-      <label>Fee (₹, 0 = free) <input type="number" name="fee" min="0" max="100000" value="0"></label>
+      <label>Fee in Rupiah (0 = free) <input type="number" name="fee" min="0" max="10000000" step="1000" value="0"></label>
       <label>Participant places <input type="number" name="capParticipant" min="0" max="500" value="10"></label>
       <label>Volunteer places <input type="number" name="capVolunteer" min="0" max="100" value="2"></label>
       <label>Organizer places <input type="number" name="capOrganizer" min="0" max="20" value="1"></label>
@@ -447,10 +463,10 @@ async function showSchools() {
     <h1>Schools on the platform</h1>
     <form class="panel grid" id="school-form">
       <label>School name <input name="name" required minlength="3" maxlength="80"></label>
-      <label>City <input name="city" required minlength="2" maxlength="40"></label>
+      <label>Area <select name="city" required>${AREAS.map((a) => `<option>${a}</option>`).join('')}</select></label>
       <button>Add school</button>
     </form>
-    <div class="table-wrap"><table><tr><th>School</th><th>City</th><th>Principal</th><th>Students</th><th>Assign principal</th><th></th></tr>
+    <div class="table-wrap"><table><tr><th>School</th><th>Area</th><th>Principal</th><th>Students</th><th>Assign principal</th><th></th></tr>
       ${rows || '<tr><td colspan="6">No schools yet.</td></tr>'}</table></div>`;
 
   document.getElementById('school-form').onsubmit = async (event) => {

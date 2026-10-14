@@ -27,13 +27,13 @@ Demo logins (password `Password1` for all):
 
 | School | ID | Who | Role |
 |---|---|---|---|
-| Greenwood International School | `S1001` | Aarav Shah | student (created the beach clean-up) |
-| Greenwood International School | `S1002` | Diya Patel | student (shows the date-clash refusal) |
-| Greenwood International School | `S1003` | Kabir Singh | student |
-| Greenwood International School | `S1004` | Meera Iyer | student, **not activated**: use "Activate your account" |
-| Greenwood International School | `T200` | Mr. Vikram Mehta | teacher (CAS coordinator) |
-| Greenwood International School | `P100` | Mrs. Anjali Rao | principal |
-| Lakeside IB Academy | `S2001` / `S2002` | Rohan Das / Ananya Joshi | students at the other school |
+| Gandhi Memorial International School | `S1001` | Aarav Shah | student (created the beach clean-up) |
+| Gandhi Memorial International School | `S1002` | Putri Wijaya | student (shows the date-clash refusal) |
+| Gandhi Memorial International School | `S1003` | Rizky Pratama | student |
+| Gandhi Memorial International School | `S1004` | Nadia Kusuma | student, **not activated**: use "Activate your account" |
+| Gandhi Memorial International School | `T200` | Mr. Vikram Mehta | teacher (CAS coordinator) |
+| Gandhi Memorial International School | `P100` | Ibu Ratna Dewi | principal |
+| Senayan IB Academy | `S2001` / `S2002` | Bima Santoso / Ayu Lestari | students at the other school |
 | Service provider (platform admin) | `ADMIN` | Service Provider | admin |
 
 ## Part 2: The folder map
@@ -65,44 +65,44 @@ docs/                  ← Criteria C and D, diagrams, screenshots, this guide
 
 | Syntax | What it means | Where it appears |
 |---|---|---|
-| `const x = 5;` / `let y = 0;` | `const` can't be reassigned; `let` can. | everywhere; `let score = 0` in search.js:23 |
+| `const x = 5;` / `let y = 0;` | `const` can't be reassigned; `let` can. | everywhere; `let score = 0` in search.js:25 |
 | `` `Hello ${name}` `` | **Template literal**: a string with values inserted at `${…}`. | `` `${salt}:${hash}` `` auth.js:13 |
-| `(a, b) => a + b` | **Arrow function**: a short way to write a function. | sort comparator search.js:51 |
+| `(a, b) => a + b` | **Arrow function**: a short way to write a function. | sort comparator search.js:53 |
 | `function f(x = 5)` | **Default parameter**: x is 5 if no value is given. | `options = {}` app.js:8 |
 | `const { a, b } = obj;` | **Destructuring**: take properties out of an object into variables. | `const { createDb } = require('./src/db')` |
 | `const [salt, hash] = text.split(':')` | Destructuring an array. | auth.js:19 |
-| `{ ...project, score }` | **Spread**: copy all properties of `project`, then add `score`. | search.js:48 |
+| `{ ...project, score }` | **Spread**: copy all properties of `project`, then add `score`. | search.js:50 |
 | `function f(...roles)` | **Rest parameter**: all arguments collected into an array. | `requireRole(...roles)` auth.js:69 |
-| `a ?? b` | Use `a`, unless it is `null`/`undefined`, then use `b`. | `body.fee ?? 0` validation.js:71 |
+| `a ?? b` | Use `a`, unless it is `null`/`undefined`, then use `b`. | `body.fee ?? 0` validation.js:75 |
 | `a \|\| b` | Use `a` if it is "truthy", otherwise `b`. | `process.env.PORT \|\| 3000` |
-| `cond ? x : y` | **Ternary**: if `cond` then `x` else `y`. | validation.js:13 |
+| `cond ? x : y` | **Ternary**: if `cond` then `x` else `y`. | validation.js:17 |
 | `arr.map(f)` / `arr.filter(f)` | New array with `f` applied to each item / only items where `f` is true. | app.js (browser) many places |
 | `arr.includes(x)` | Is `x` in the array? | `ROLES.includes(role)` joinRules.js:29 |
-| `arr.sort((a, b) => …)` | Sort; a negative result puts `a` first, positive puts `b` first. | search.js:51 |
+| `arr.sort((a, b) => …)` | Sort; a negative result puts `a` first, positive puts `b` first. | search.js:53 |
 | `/^\d{4}-\d{2}-\d{2}$/` | **Regular expression** (a text pattern). `^` start, `\d` digit, `{4}` exactly 4, `$` end. | dates.js:7 |
 | `require('x')` / `module.exports = {…}` | Import from / export to other files (CommonJS modules). | top and bottom of every file |
 | `async function` / `await` | `await` pauses the function until a slow task (like a network request) finishes, without freezing the page. | `await fetch(url)` public/app.js:17 |
-| `try { … } catch (err) { … }` | If anything in `try` throws an error, jump to `catch`. | public/app.js:93-97 |
+| `try { … } catch (err) { … }` | If anything in `try` throws an error, jump to `catch`. | public/app.js:108-112 |
 | `new Map()` | A key → value table. | projectRoutes.js:76 |
 
 ## Part 4: Following one click through the whole system
 
-**Scenario:** Kabir is logged in and clicks **"Join as volunteer"** on the School Mural project (id 2).
+**Scenario:** Rizky is logged in and clicks **"Join as volunteer"** on the Batik Mural Painting project (id 2).
 
 | Step | File:line | What happens |
 |---|---|---|
-| 1 | `public/app.js:254` | When the project page was drawn, every `<button data-role="…">` got an `onclick` function. |
-| 2 | `public/app.js:257` | The click runs `api('POST', '/api/projects/2/join', { role: 'volunteer' })`. |
-| 3 | `public/app.js:11-21` | `api()` turns `{ role: 'volunteer' }` into JSON text and calls `fetch`. The browser automatically attaches Kabir's `cas_session` cookie. |
+| 1 | `public/app.js:270` | When the project page was drawn, every `<button data-role="…">` got an `onclick` function. |
+| 2 | `public/app.js:273` | The click runs `api('POST', '/api/projects/2/join', { role: 'volunteer' })`. |
+| 3 | `public/app.js:11-21` | `api()` turns `{ role: 'volunteer' }` into JSON text and calls `fetch`. The browser automatically attaches Rizky's `cas_session` cookie. |
 | 4 | `src/app.js:13` | On the server, `express.json()` turns the JSON text back into `req.body = { role: 'volunteer' }`. |
-| 5 | `src/app.js:14` → `src/auth.js:60-63` | `loadUser` reads the cookie, looks up the token in `sessions`, and sets `req.user = { id: 6, name: 'Kabir Singh', role: 'student', school_id: 1, … }`. |
+| 5 | `src/app.js:14` → `src/auth.js:60-63` | `loadUser` reads the cookie, looks up the token in `sessions`, and sets `req.user = { id: 6, name: 'Rizky Pratama', role: 'student', school_id: 1, … }`. |
 | 6 | `src/app.js:22` | The path starts with `/api`, so Express hands the request to `projectRoutes`. |
-| 7 | `src/routes/projectRoutes.js:131` | This route matches `POST /projects/:id/join`, so `req.params.id = '2'`. First `requireRole('student')` runs (auth.js:69-76). Kabir is a student, so `next()` is called. |
+| 7 | `src/routes/projectRoutes.js:131` | This route matches `POST /projects/:id/join`, so `req.params.id = '2'`. First `requireRole('student')` runs (auth.js:69-76). Rizky is a student, so `next()` is called. |
 | 8 | `projectRoutes.js:132-133` | It loads project 2 from the database. If it didn't exist, it would answer 404. |
-| 9 | `projectRoutes.js:135-143` | It gathers everything the rules need: Kabir's existing request (none), the accepted counts, and Kabir's schedule. Then it calls `checkJoinRequest`. |
+| 9 | `projectRoutes.js:135-143` | It gathers everything the rules need: Rizky's existing request (none), the accepted counts, and Rizky's schedule. Then it calls `checkJoinRequest`. |
 | 10 | `src/joinRules.js:27-64` | Rules 1–8 are checked in order. All pass, so it returns `{ ok: true }`. |
 | 11 | `projectRoutes.js:146-148` | It INSERTs a `pending` membership and answers `201 { message: 'Request sent…' }`. |
-| 12 | `public/app.js:258-259` | Back in the browser, `api()` returns the data. A green message is shown and the page is redrawn, now showing "Your request … is pending". |
+| 12 | `public/app.js:274-275` | Back in the browser, `api()` returns the data. A green message is shown and the page is redrawn, now showing "Your request … is pending". |
 
 If a rule had failed, for example the deadline had passed, step 10 would return `{ ok: false, status: 409, reason: 'The application deadline has passed.' }`. Line 144 would send that as `409 { error: … }`. In the browser, `api()` would **throw** (app.js:19), the `catch` would run, and `showMessage` would show the reason in red.
 
@@ -165,37 +165,39 @@ Every line in the source has its own comment. The tables below explain the *why*
 | 14 | The `Z` means UTC, so the time zone can't move the date to the day before. |
 | 17 | **The clever bit.** `new Date('2026-02-30')` silently becomes 2 March. Converting back to text and comparing with the original catches impossible dates. |
 | 21-25 | Add days using UTC, which handles month and year ends (31 Dec + 1 = 1 Jan). |
-| 28-33 | Today's date in *local* time. `padStart(2, '0')` turns `9` into `09`. |
-| 37-39 | **Overlap test.** Two ranges overlap unless one ends before the other starts. Written positively: A starts on or before B ends, *and* B starts on or before A ends. Because dates are `YYYY-MM-DD` text, `<=` compares them correctly. |
+| 27-34 | Today's date in *local* time. Jakarta is on WIB (UTC+7): before 7 a.m. WIB the UTC date is still yesterday, so using UTC would keep deadlines open a day too long. `padStart(2, '0')` turns `9` into `09`. |
+| 38-40 | **Overlap test.** Two ranges overlap unless one ends before the other starts. Written positively: A starts on or before B ends, *and* B starts on or before A ends. Because dates are `YYYY-MM-DD` text, `<=` compares them correctly. |
 
 ### `src/validation.js`
 
 | Lines | Explanation |
 |---|---|
-| 10-14 | `cleanText` trims and squashes spaces, then checks the length. It returns the clean text or `null`. |
-| 17-20 | `Number('4.5')` is 4.5, and `Number.isInteger(4.5)` is false, so it's rejected. `Number('abc')` is NaN and is rejected too. |
-| 23-28 | Password rules, each with its own message. `/[A-Za-z]/` = "contains a letter", `/\d/` = "contains a digit". |
-| 31-36 | School IDs are upper-cased so that `s1001` and `S1001` are the same. Only letters and digits are allowed. |
-| 40-92 | `validateProject` pushes **every** problem into `errors` instead of stopping at the first. Lines 59-66 check the date order only when all three dates are real; otherwise those comparisons would be meaningless. It returns both the errors and the cleaned values. |
+| 7-11 | `AREAS` is the list of Jakarta/Jabodetabek areas a school can be in (the admin's add-school form must use one). `MAX_FEE` is Rp 10.000.000, since fees are in Indonesian Rupiah. |
+| 14-18 | `cleanText` trims and squashes spaces, then checks the length. It returns the clean text or `null`. |
+| 21-24 | `Number('4.5')` is 4.5, and `Number.isInteger(4.5)` is false, so it's rejected. `Number('abc')` is NaN and is rejected too. |
+| 27-32 | Password rules, each with its own message. `/[A-Za-z]/` = "contains a letter", `/\d/` = "contains a digit". |
+| 35-40 | School IDs are upper-cased so that `s1001` and `S1001` are the same. Only letters and digits are allowed. |
+| 44-96 | `validateProject` pushes **every** problem into `errors` instead of stopping at the first. Lines 63-70 check the date order only when all three dates are real; otherwise those comparisons would be meaningless. It returns both the errors and the cleaned values. |
 
 ### `src/search.js`: Algorithm 1
 
 | Lines | Explanation |
 |---|---|
 | 6-14 | `normalise` is a chain of string methods, each acting on the result of the previous one. `'NFD'` splits "é" into "e" plus a separate accent character. The next line deletes all accent characters (Unicode range U+0300–U+036F). |
-| 19-30 | `scoreProject`: +3 for each word found in the title, +1 if found elsewhere. If a word is missing everywhere, it returns 0 straight away (an AND search). `includes` finds partial words ("foot" in "football"). |
-| 40 | `"Beach  Clean"` becomes `"beach clean"`, then `["beach", "clean"]`. `filter(Boolean)` removes empty strings, so a blank search gives `[]`. |
-| 42-49 | One pass over all projects. Each `continue` skips a project that fails a filter. Matching projects are copied with their score. |
-| 51 | **Two-level sort.** `b.score - a.score` puts the highest score first. When scores tie it is `0`, which is falsy, so `\|\|` moves on to comparing start dates alphabetically, which for `YYYY-MM-DD` is the same as by date. |
+| 19-32 | `scoreProject`: +3 for each word found in the title, +1 if found elsewhere. If a word is missing everywhere, it returns 0 straight away (an AND search). `includes` finds partial words ("foot" in "futsal"). |
+| 23-24 | `rest` joins every field except the title, including the school's **area**, so searching `jakarta selatan` finds Senayan IB projects. `.map((part) => part ?? '')` turns missing fields into empty text so the word "undefined" never appears. |
+| 42 | `"Beach  Clean"` becomes `"beach clean"`, then `["beach", "clean"]`. `filter(Boolean)` removes empty strings, so a blank search gives `[]`. |
+| 44-51 | One pass over all projects. Each `continue` skips a project that fails a filter. Matching projects are copied with their score. |
+| 53 | **Two-level sort.** `b.score - a.score` puts the highest score first. When scores tie it is `0`, which is falsy, so `\|\|` moves on to comparing start dates alphabetically, which for `YYYY-MM-DD` is the same as by date. |
 
-**Worked example.** The query is `"clean"`. The projects are *Juhu Beach Clean-Up Drive* (title contains "clean") and *School Mural Painting*, whose description mentions "clean oceans".
+**Worked example.** The query is `"clean"`. The projects (from the sample data in test T08) are *Ancol Beach Clean-Up Drive* (title contains "clean") and *Batik Mural Painting*, whose description mentions "clean oceans".
 
 | Project | normalised title | "clean" in title? | in rest? | score |
 |---|---|---|---|---|
-| Juhu Beach… | `juhu beach clean up drive` | yes | – | 3 |
-| School Mural… | `school mural painting` | no | yes | 1 |
+| Ancol Beach… | `ancol beach clean up drive` | yes | – | 3 |
+| Batik Mural… | `batik mural painting` | no | yes | 1 |
 
-After sorting, the order is Juhu (3), then Mural (1). This is exactly what test T08 checks.
+After sorting, the order is Ancol (3), then Mural (1). This is exactly what test T08 checks.
 
 ### `src/joinRules.js`: Algorithm 2
 
@@ -257,19 +259,21 @@ Points worth knowing:
 | 25-28 | `esc()` replaces `< > & " '` with HTML entities, so user text can never become HTML or script (XSS protection). Every `${…}` holding user data goes through `esc`. |
 | 32-39 | `showMessage` uses `textContent`, which is always safe, and hides the message after 6 s. |
 | 42-44 | `FormData` reads every named input of a form, and `Object.fromEntries` turns it into an object. |
-| 56-61 | Which menu links each role sees. |
-| 79-99 | **The router.** `location.hash` is the part after `#`. `"#/project/5".split('/')` is `["#", "project", "5"]`, and the leading comma in `[, page, id]` skips the first item. Logged-out users only see login or activate. Pages not allowed for your role send you to your home screen. |
-| 108-131 | Login form. `event.preventDefault()` stops the browser's normal reload so JavaScript can send the data. |
-| 182-209 | Search screen. `URLSearchParams` turns `{ q: 'beach', strand: '' }` into `q=beach&strand=`. |
-| 213-273 | Project screen. It shows Join buttons only if you're a student, not the creator, not already requested, and the project is open. Full roles get `disabled`. The creator sees Accept/Reject. |
-| 351-395 | Teacher screen. `nextStep` mirrors statusFlow.js, so only the valid next button appears. Rejecting asks for a reason with `prompt()`. |
-| 488-494 | Start-up. Redraw whenever the hash changes, then ask the server "who am I?" (the cookie may still be valid) and draw the first screen. |
+| 47-55 | `rupiah(50000)` gives `"Rp 50.000"` (`toLocaleString('id-ID')` uses Indonesian dots between thousands). `todayLocal()` gives today's date in WIB for the date pickers. |
+| 63-64 | The same Jabodetabek `AREAS` list as the server, used for the admin's area drop-down. |
+| 71-76 | Which menu links each role sees. |
+| 94-113 | **The router.** `location.hash` is the part after `#`. `"#/project/5".split('/')` is `["#", "project", "5"]`, and the leading comma in `[, page, id]` skips the first item. Logged-out users only see login or activate. Pages not allowed for your role send you to your home screen. |
+| 123-147 | Login form. `event.preventDefault()` stops the browser's normal reload so JavaScript can send the data. |
+| 198-225 | Search screen. `URLSearchParams` turns `{ q: 'beach', strand: '' }` into `q=beach&strand=`. |
+| 229-289 | Project screen. It shows Join buttons only if you're a student, not the creator, not already requested, and the project is open. Full roles get `disabled`. The creator sees Accept/Reject. |
+| 367-411 | Teacher screen. `nextStep` mirrors statusFlow.js, so only the valid next button appears. Rejecting asks for a reason with `prompt()`. |
+| 504-510 | Start-up. Redraw whenever the hash changes, then ask the server "who am I?" (the cookie may still be valid) and draw the first screen. |
 
 ### `tests/`: how to read a test
 
 ```js
 test('T23 (SC5) … capacity can never be exceeded', () => withServer(async ({ request, login }) => {
-  const diya = await login(GREENWOOD, 'S1002');                     // get a session cookie
+  const putri = await login(GMIS, 'S1002');                     // get a session cookie
   ...
   assert.equal(full.status, 409);                                    // the check: actual vs expected
 }));
@@ -279,7 +283,7 @@ test('T23 (SC5) … capacity can never be exceeded', () => withServer(async ({ r
 
 ## Part 6: Things to try (to prove to yourself you understand it)
 
-1. Change the title weight in search.js:25 from `3` to `1`. Run `npm test`. Which test fails, and why?
+1. Change the title weight in search.js:27 from `3` to `1`. Run `npm test`. Which test fails, and why?
 2. Delete rule 8 (joinRules.js:58-61). Which tests fail?
 3. Add a new strand-independent rule, for example "a student can have at most 3 pending requests". Write the rule in `joinRules.js`, pass the count in from `projectRoutes.js`, and add a test.
 4. In the browser, open DevTools → Network and watch the requests while you use the app.
@@ -300,6 +304,6 @@ test('T23 (SC5) … capacity can never be exceeded', () => withServer(async ({ r
 
 **Why "not found" instead of "forbidden" for pending projects?** So other students can't even confirm that a hidden project exists. This was a real bug that testing caught (T22).
 
-**What is the time complexity of search?** O(n) to scan n projects, plus O(k log k) to sort the k matches. In practice that's 46 ms for 20,000 projects.
+**What is the time complexity of search?** O(n) to scan n projects, plus O(k log k) to sort the k matches. In practice that's about 63 ms for 20,000 projects.
 
 **What would you improve?** See Criterion E. Examples: notifications when a request is decided, PostgreSQL for many schools at once, password reset, and digital certificates generated from the CAS record.

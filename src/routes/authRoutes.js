@@ -21,7 +21,7 @@ module.exports = function authRoutes(db) {
 
   // GET /api/auth/schools — list of active schools for the login drop-down (no login needed).
   router.get('/schools', (req, res) => {
-    res.json(db.prepare('SELECT id, name FROM schools WHERE is_active = 1 ORDER BY name').all());
+    res.json(db.prepare('SELECT id, name, city AS area FROM schools WHERE is_active = 1 ORDER BY name').all());
   });
 
   // POST /api/auth/activate — a student/teacher whose ID was added by the principal sets a password.

@@ -58,6 +58,8 @@ test('T06 (SC3) project form: numbers, strand and places are checked', () => {
   assert.equal(errorsFor({ hours: 4.5 }), 1);              // not a whole number
   assert.equal(errorsFor({ hours: 'four' }), 1);
   assert.equal(errorsFor({ fee: -1 }), 1);
+  assert.equal(errorsFor({ fee: 10000000 }), 0);          // boundary: Rp 10.000.000 allowed
+  assert.equal(errorsFor({ fee: 10000001 }), 1);          // one Rupiah over the limit
   assert.equal(errorsFor({ strand: 'Sport' }), 1);
   assert.equal(errorsFor({ capParticipant: 0, capVolunteer: 0, capOrganizer: 0 }), 1);
   assert.equal(validateProject({}, TODAY).errors.length >= 6, true);   // empty form → many errors at once
@@ -75,9 +77,9 @@ test('T07 (SC1) passwords and school IDs', () => {
 
 // ---------------- search (Algorithm 1) ----------------
 const sample = [
-  { id: 1, title: 'Juhu Beach Clean-Up Drive', description: 'Collect plastic', location: 'Mumbai', school_name: 'Greenwood', strand: 'Service', school_id: 1, start_date: '2026-10-11', apply_deadline: '2026-10-08' },
-  { id: 2, title: 'School Mural Painting', description: 'Paint a wall about clean oceans', location: 'Mumbai', school_name: 'Greenwood', strand: 'Creativity', school_id: 1, start_date: '2026-10-05', apply_deadline: '2026-09-25' },
-  { id: 3, title: 'Café Music Night', description: 'Acoustic evening', location: 'Pune', school_name: 'Lakeside', strand: 'Creativity', school_id: 2, start_date: '2026-10-20', apply_deadline: '2026-10-15' },
+  { id: 1, title: 'Ancol Beach Clean-Up Drive', description: 'Collect plastic', location: 'Jakarta Pusat', school_name: 'GMIS', strand: 'Service', school_id: 1, start_date: '2026-10-11', apply_deadline: '2026-10-08' },
+  { id: 2, title: 'Batik Mural Painting', description: 'Paint a wall about clean oceans', location: 'Jakarta Pusat', school_name: 'GMIS', strand: 'Creativity', school_id: 1, start_date: '2026-10-05', apply_deadline: '2026-09-25' },
+  { id: 3, title: 'Café Music Night', description: 'Acoustic evening', location: 'Jakarta Selatan', school_name: 'Senayan', strand: 'Creativity', school_id: 2, start_date: '2026-10-20', apply_deadline: '2026-10-15' },
 ];
 
 test('T08 (SC2) search: case-insensitive partial matching ranks title matches first', () => {

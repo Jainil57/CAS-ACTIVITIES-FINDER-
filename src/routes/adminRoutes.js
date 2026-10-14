@@ -2,7 +2,7 @@
 // schools and assigns each school's principal. Mounted at /api/admin.
 const express = require('express');
 const { requireRole } = require('../auth');
-const { cleanText, cleanLoginId } = require('../validation');
+const { cleanText, cleanLoginId, AREAS } = require('../validation');
 
 module.exports = function adminRoutes(db) {
   const router = express.Router();
@@ -17,12 +17,13 @@ module.exports = function adminRoutes(db) {
       FROM schools s WHERE s.is_active = 1 ORDER BY s.name`).all());
   });
 
-  // POST /api/admin/schools  { name, city } — register a new IBDP school.
+  // POST /api/admin/schools  { name, city } — register a new IBDP school in Jakarta / Jabodetabek.
   router.post('/schools', (req, res) => {
     const name = cleanText(req.body.name, 3, 80);
-    const city = cleanText(req.body.city, 2, 40);
-    if (!name || !city) return res.status(400).json({ error: 'School name (3-80) and city (2-40) are required.' });
-    // "COLLATE NOCASE" makes "Greenwood School" and "greenwood school" count as the same name.
+    const city = AREAS.includes(req.body.city) ? req.body.city : null;     // must be one of the listed areas
+    if (!name) return res.status(400).json({ error: 'School name must be 3-80 characters.' });
+    if (!city) return res.status(400).json({ error: `Area must be one of: ${AREAS.join(', ')}.` });
+    // "COLLATE NOCASE" makes "Senayan IB Academy" and "SENAYAN ib academy" count as the same name.
     if (db.prepare('SELECT id FROM schools WHERE name = ? COLLATE NOCASE').get(name)) {
       return res.status(409).json({ error: 'A school with this name already exists.' });
     }

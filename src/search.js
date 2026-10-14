@@ -19,7 +19,9 @@ function normalise(text) {
 function scoreProject(project, words) {
   if (words.length === 0) return 1;                      // empty search: everything matches equally
   const title = normalise(project.title);
-  const rest = normalise(`${project.description} ${project.location} ${project.school_name} ${project.strand}`);
+  // Everything except the title; `?? ''` skips missing fields. Includes the school's area, so "selatan" finds South Jakarta.
+  const rest = normalise([project.description, project.location, project.school_name, project.school_area, project.strand]
+    .map((part) => part ?? '').join(' '));
   let score = 0;
   for (const word of words) {
     if (title.includes(word)) score += 3;                // partial match: "clean" is inside "cleanup"

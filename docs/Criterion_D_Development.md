@@ -77,7 +77,7 @@ function requireRole(...roles) { return (req, res, next) => { /* 401 / 403 / nex
 return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === text;   // rejects 2026-02-30
 ```
 
-JavaScript silently rolls 30 February over to 2 March, so converting the date back to text exposes impossible dates. `validateProject` collects all errors, so a student fixes the form in one attempt. The server re-checks everything: with the browser's checks disabled, the bad form was still refused.
+JavaScript silently rolls 30 February over to 2 March, so converting the date back to text exposes impossible dates. `validateProject` collects all errors, so a student fixes the form in one attempt. School areas are checked against a fixed list of Jabodetabek areas, and fees against a Rupiah limit. The server re-checks everything: with the browser's checks disabled, the bad form was still refused.
 
 ### 7. Asynchronous requests and output escaping
 
@@ -87,7 +87,7 @@ if (!response.ok) throw new Error(data.error || `Request failed (${response.stat
 const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (ch) => map[ch]);
 ```
 
-All screens use one `api()` helper, so the server's reason always reaches the user. Text written by users passes through `esc()`, so a project titled `<img src=x onerror=alert(1)>` displays as plain text ([screenshot](images/ui-10-teacher.png)).
+All screens use one `api()` helper, so the server's reason always reaches the user. Fees are shown in Indonesian format with `toLocaleString('id-ID')` (Rp 50.000), and dates use local WIB time instead of UTC. Text written by users passes through `esc()`, so a project titled `<img src=x onerror=alert(1)>` displays as plain text ([screenshot](images/ui-10-teacher.png)).
 
 ### 8. Dependency injection
 
@@ -99,7 +99,7 @@ All screens use one `api()` helper, so the server's reason always reaches the us
 |---|---|---|
 | JavaScript on both tiers (originally planned: Java) | one language, native JSON, shared helpers | no compile-time types, so the tests had to catch type errors |
 | SQLite built into Node | no server to install; constraints, joins | one writer at a time; PostgreSQL needed for city-wide use |
-| Synchronous queries | a capacity check and the following insert can't interleave, which prevents overbooking (T23) | a slow query would block others; measured ≤ 60 ms |
+| Synchronous queries | a capacity check and the following insert can't interleave, which prevents overbooking (T23) | a slow query would block others; measured ≤ 65 ms |
 | Soft delete | CAS history kept; reversible | an ID can't be reused |
 | Sessions in the database | survive restarts (T27); removal logs out instantly | one query per request |
 | No front-end framework | no build step; every line is explainable | whole screens re-render; some repeated wiring |
@@ -113,7 +113,7 @@ All screens use one `api()` helper, so the server's reason always reaches the us
 
 **Reliability.** Each test gets its own server and database, so test order can't matter. The suite also covers malformed JSON, oversized bodies, empty records, stale cookies and restarts.
 
-**Efficiency.** Searching 2,006 projects took 51 ms over HTTP. The algorithm alone took 46 ms for 20,000 projects: an O(n) scan plus an O(k log k) sort of the k matches.
+**Efficiency.** Searching 2,006 projects took 60 ms over HTTP. The algorithm alone took 63 ms for 20,000 projects: an O(n) scan plus an O(k log k) sort of the k matches.
 
 **Defect found.** T22 failed at first because joining a *pending* project returned 409 "not open", which revealed that the hidden project existed. Pending and rejected projects now return 404, and T12 covers both cases.
 

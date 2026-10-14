@@ -9,7 +9,7 @@ const SCHEMA = `
   CREATE TABLE IF NOT EXISTS schools (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,   -- unique number given automatically
     name       TEXT    NOT NULL UNIQUE,             -- two schools cannot have the same name
-    city       TEXT    NOT NULL,
+    city       TEXT    NOT NULL,                    -- Jabodetabek area, e.g. 'Jakarta Pusat'
     is_active  INTEGER NOT NULL DEFAULT 1           -- 1 = active, 0 = removed (soft delete)
   );
 
@@ -37,7 +37,7 @@ const SCHEMA = `
     end_date         TEXT    NOT NULL,
     apply_deadline   TEXT    NOT NULL,
     hours            INTEGER NOT NULL,              -- CAS hours a member earns
-    fee              INTEGER NOT NULL DEFAULT 0,    -- participation fee in rupees (0 = free)
+    fee              INTEGER NOT NULL DEFAULT 0,    -- participation fee in Indonesian Rupiah (0 = free)
     cap_participant  INTEGER NOT NULL,              -- how many of each role are needed
     cap_volunteer    INTEGER NOT NULL,
     cap_organizer    INTEGER NOT NULL,

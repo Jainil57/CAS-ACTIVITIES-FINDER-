@@ -14,7 +14,7 @@ module.exports = function projectRoutes(db, today) {
 
   // One project with its school name and creator name.
   const getProject = db.prepare(`
-    SELECT p.*, s.name AS school_name, u.name AS creator_name
+    SELECT p.*, s.name AS school_name, s.city AS school_area, u.name AS creator_name
     FROM projects p JOIN schools s ON s.id = p.school_id JOIN users u ON u.id = p.creator_id
     WHERE p.id = ? AND s.is_active = 1`);
 
@@ -42,7 +42,7 @@ module.exports = function projectRoutes(db, today) {
   function summary(project, counts) {
     return {
       id: project.id, title: project.title, description: project.description, strand: project.strand,
-      schoolId: project.school_id, schoolName: project.school_name, interschool: Boolean(project.interschool),
+      schoolId: project.school_id, schoolName: project.school_name, schoolArea: project.school_area, interschool: Boolean(project.interschool),
       location: project.location, startDate: project.start_date, endDate: project.end_date,
       applyDeadline: project.apply_deadline, hours: project.hours, fee: project.fee, status: project.status,
       teacherComment: project.teacher_comment, creatorId: project.creator_id, creatorName: project.creator_name,
@@ -58,7 +58,7 @@ module.exports = function projectRoutes(db, today) {
   router.get('/projects', requireRole('student', 'teacher', 'principal'), (req, res) => {
     // Step 1 (SQL): only projects this user may see — approved/ongoing, own school or interschool.
     const visible = db.prepare(`
-      SELECT p.*, s.name AS school_name FROM projects p JOIN schools s ON s.id = p.school_id
+      SELECT p.*, s.name AS school_name, s.city AS school_area FROM projects p JOIN schools s ON s.id = p.school_id
       WHERE s.is_active = 1 AND p.status IN ('approved', 'ongoing') AND (p.school_id = ? OR p.interschool = 1)`)
       .all(req.user.school_id);
 

@@ -40,7 +40,7 @@ test('T27 (SC10) projects, requests and logins survive a server restart', async 
   const second = await start(file);
   const mine = await second.send('GET', '/api/my/projects', undefined, login.cookie);
   assert.equal(mine.status, 200);
-  assert.ok(mine.data.created.some((p) => p.id === created.data.id && p.title === 'Tree Planting Day'));
+  assert.ok(mine.data.created.some((p) => p.id === created.data.id && p.title === 'Mangrove Planting Day'));
   second.stop();
   fs.rmSync(folder, { recursive: true, force: true });
 });

@@ -24,7 +24,8 @@ function addDays(text, days) {
   return date.toISOString().slice(0, 10);           // turn it back into "YYYY-MM-DD"
 }
 
-// Returns today's date on this computer's clock (local time, so it is correct in India at 1 a.m.).
+// Returns today's date on this computer's clock (local time). Jakarta is on WIB (UTC+7), so at 6 a.m. WIB
+// it is still "yesterday" in UTC — using local time stops deadlines from closing a day late.
 function localToday() {
   const now = new Date();                                       // the current moment
   const month = String(now.getMonth() + 1).padStart(2, '0');    // getMonth() is 0-11, so add 1; pad "9" to "09"

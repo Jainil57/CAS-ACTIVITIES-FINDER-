@@ -20,22 +20,22 @@ function seedDemo(db, today) {
   // A transaction makes all inserts happen together: either everything is saved or nothing is.
   db.exec('BEGIN');
   try {
-    const greenwood = addSchool('Greenwood International School', 'Mumbai');
-    const lakeside = addSchool('Lakeside IB Academy', 'Pune');
+    const gmis = addSchool('Gandhi Memorial International School', 'Jakarta Pusat');
+    const senayan = addSchool('Senayan IB Academy', 'Jakarta Selatan');
 
     addUser(null, 'ADMIN', 'Service Provider', 'admin');
     const ids = {
-      greenwood, lakeside,
-      principal: addUser(greenwood, 'P100', 'Mrs. Anjali Rao', 'principal'),
-      teacher: addUser(greenwood, 'T200', 'Mr. Vikram Mehta', 'teacher'),
-      aarav: addUser(greenwood, 'S1001', 'Aarav Shah', 'student'),
-      diya: addUser(greenwood, 'S1002', 'Diya Patel', 'student'),
-      kabir: addUser(greenwood, 'S1003', 'Kabir Singh', 'student'),
-      meera: addUser(greenwood, 'S1004', 'Meera Iyer', 'student', false),   // added but not yet activated
-      lakePrincipal: addUser(lakeside, 'P500', 'Dr. Suresh Nair', 'principal'),
-      lakeTeacher: addUser(lakeside, 'T600', 'Ms. Farah Khan', 'teacher'),
-      rohan: addUser(lakeside, 'S2001', 'Rohan Das', 'student'),
-      ananya: addUser(lakeside, 'S2002', 'Ananya Joshi', 'student'),
+      gmis, senayan,
+      principal: addUser(gmis, 'P100', 'Ibu Ratna Dewi', 'principal'),
+      teacher: addUser(gmis, 'T200', 'Mr. Vikram Mehta', 'teacher'),
+      aarav: addUser(gmis, 'S1001', 'Aarav Shah', 'student'),
+      putri: addUser(gmis, 'S1002', 'Putri Wijaya', 'student'),
+      rizky: addUser(gmis, 'S1003', 'Rizky Pratama', 'student'),
+      nadia: addUser(gmis, 'S1004', 'Nadia Kusuma', 'student', false),   // added but not yet activated
+      senayanPrincipal: addUser(senayan, 'P500', 'Pak Budi Hartono', 'principal'),
+      senayanTeacher: addUser(senayan, 'T600', 'Ibu Maya Sari', 'teacher'),
+      bima: addUser(senayan, 'S2001', 'Bima Santoso', 'student'),
+      ayu: addUser(senayan, 'S2002', 'Ayu Lestari', 'student'),
     };
 
     const addProject = (p) => Number(db.prepare(`
@@ -45,39 +45,39 @@ function seedDemo(db, today) {
       p.title, p.description, p.strand, p.school, p.creator, p.interschool ? 1 : 0, p.location, p.start, p.end,
       p.deadline, p.hours, p.fee || 0, p.caps[0], p.caps[1], p.caps[2], p.status, d(-60)).lastInsertRowid);
 
-    ids.beach = addProject({ title: 'Juhu Beach Clean-Up Drive', strand: 'Service', school: greenwood, creator: ids.aarav,
-      interschool: true, location: 'Juhu Beach, Mumbai', start: d(10), end: d(10), deadline: d(7), hours: 4,
+    ids.beach = addProject({ title: 'Ancol Beach Clean-Up Drive', strand: 'Service', school: gmis, creator: ids.aarav,
+      interschool: true, location: 'Pantai Ancol, Jakarta Utara', start: d(10), end: d(10), deadline: d(7), hours: 4,
       caps: [20, 5, 2], status: 'approved',
-      description: 'Collect and sort plastic waste along Juhu beach with a local NGO. Gloves and bags provided.' });
-    ids.mural = addProject({ title: 'School Mural Painting', strand: 'Creativity', school: greenwood, creator: ids.diya,
-      location: 'Greenwood main corridor', start: d(14), end: d(28), deadline: d(10), hours: 15, fee: 200,
+      description: 'Collect and sort plastic waste along Ancol beach with a local environmental NGO. Gloves and bags provided.' });
+    ids.mural = addProject({ title: 'Batik Mural Painting', strand: 'Creativity', school: gmis, creator: ids.putri,
+      location: 'GMIS main corridor, Kemayoran', start: d(14), end: d(28), deadline: d(10), hours: 15, fee: 50000,
       caps: [10, 2, 1], status: 'approved',
-      description: 'Design and paint a mural about sustainability on the main corridor wall over two weeks.' });
-    ids.football = addProject({ title: 'Inter-school Football League', strand: 'Activity', school: lakeside, creator: ids.rohan,
-      interschool: true, location: 'Lakeside sports ground, Pune', start: d(-5), end: d(30), deadline: d(3), hours: 20,
+      description: 'Design and paint a batik-inspired mural about Jakarta and sustainability on the main corridor wall.' });
+    ids.futsal = addProject({ title: 'Inter-school Futsal League', strand: 'Activity', school: senayan, creator: ids.bima,
+      interschool: true, location: 'Senayan IB sports hall, Jakarta Selatan', start: d(-5), end: d(30), deadline: d(3), hours: 20,
       caps: [40, 6, 3], status: 'ongoing',
-      description: 'Weekly 7-a-side football fixtures between IBDP schools, ending with a finals day.' });
-    ids.coding = addProject({ title: 'Coding Club for Juniors', strand: 'Creativity', school: greenwood, creator: ids.kabir,
+      description: 'Weekly 5-a-side futsal fixtures between IBDP schools in Jakarta, ending with a finals day.' });
+    ids.coding = addProject({ title: 'Coding Club for Juniors', strand: 'Creativity', school: gmis, creator: ids.rizky,
       location: 'Computer lab 2', start: d(20), end: d(50), deadline: d(15), hours: 12,
       caps: [15, 3, 2], status: 'pending',
       description: 'Teach grade 6 and 7 students the basics of Scratch and Python every Friday afternoon.' });
-    ids.oldAge = addProject({ title: 'Old Age Home Visit', strand: 'Service', school: greenwood, creator: ids.diya,
-      location: 'Shanti Old Age Home, Andheri', start: d(-40), end: d(-40), deadline: d(-45), hours: 3,
+    ids.oldAge = addProject({ title: 'Panti Werdha Visit', strand: 'Service', school: gmis, creator: ids.putri,
+      location: 'Panti Werdha Kasih, Jakarta Pusat', start: d(-40), end: d(-40), deadline: d(-45), hours: 3,
       caps: [12, 0, 1], status: 'completed',
-      description: 'Spend an afternoon reading, singing and playing board games with residents.' });
-    ids.yoga = addProject({ title: 'Yoga Mornings', strand: 'Activity', school: lakeside, creator: ids.rohan,
-      location: 'Lakeside courtyard', start: d(5), end: d(35), deadline: d(4), hours: 10,
+      description: 'Spend an afternoon at an elderly home (panti werdha) reading, singing and playing games with residents.' });
+    ids.silat = addProject({ title: 'Pencak Silat Mornings', strand: 'Activity', school: senayan, creator: ids.bima,
+      location: 'Senayan IB courtyard', start: d(5), end: d(35), deadline: d(4), hours: 10,
       caps: [25, 0, 1], status: 'approved',
-      description: 'Thirty-minute yoga sessions before school, three mornings a week. Lakeside students only.' });
+      description: 'Learn pencak silat basics before school, three mornings a week. Senayan IB students only.' });
 
     const addMember = (project, user, role, status) => db.prepare(`
       INSERT INTO memberships (project_id, user_id, role, status, requested_at) VALUES (?, ?, ?, ?, ?)`)
       .run(project, user, role, status, d(-50));
-    addMember(ids.beach, ids.diya, 'participant', 'accepted');
-    addMember(ids.beach, ids.kabir, 'volunteer', 'pending');
+    addMember(ids.beach, ids.putri, 'participant', 'accepted');
+    addMember(ids.beach, ids.rizky, 'volunteer', 'pending');
     addMember(ids.oldAge, ids.aarav, 'participant', 'accepted');
-    addMember(ids.oldAge, ids.kabir, 'participant', 'accepted');
-    addMember(ids.football, ids.aarav, 'organizer', 'accepted');
+    addMember(ids.oldAge, ids.rizky, 'participant', 'accepted');
+    addMember(ids.futsal, ids.aarav, 'organizer', 'accepted');
 
     db.exec('COMMIT');                         // save everything
     return ids;

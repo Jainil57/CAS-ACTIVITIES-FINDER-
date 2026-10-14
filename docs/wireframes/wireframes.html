@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>CAS Activities Finder — wireframes</title>
+<title>CAS Activities Finder (Jakarta) — wireframes</title>
 <style>
   body { font-family: "Comic Sans MS", "Segoe Print", cursive, sans-serif; background: #fff; color: #333; margin: 20px; }
   .frame { width: 760px; border: 2px solid #555; border-radius: 6px; margin: 0 0 40px; padding: 0 0 16px; background: #fff; }
@@ -26,72 +26,72 @@
 
 <div class="frame" id="w1">
   <div class="cap">W1 · Log in / Activate account (all users)</div>
-  <div class="bar"><b>CAS Activities Finder</b></div>
+  <div class="bar"><b>CAS Activities Finder</b> <span class="x">· IBDP schools in Jakarta</span></div>
   <div class="pad" style="width:360px;margin:0 auto">
     <h3>Log in</h3>
-    School <span class="in">▼ choose school / Service provider</span><br>
+    School <span class="in">▼ Gandhi Memorial International School — Jakarta Pusat</span><br><span class="x">(other options: Senayan IB Academy — Jakarta Selatan … · Service provider)</span><br>
     School ID <span class="in">S1001</span><br>
     Password <span class="in">••••••••</span><br>
     <span class="btn">Log in</span>
     <div class="box x">[ error / success message area ]</div>
     <u>First time? Activate your account</u> → same form + "repeat password"
-    <div class="note">SC1: only IDs added by the principal can activate · one error message for wrong ID or password</div>
+    <div class="note">SC1: only IDs added by the GMIS principal can activate · one error message for wrong ID or password</div>
   </div>
 </div>
 
 <div class="frame" id="w2">
   <div class="cap">W2 · Find projects (student home)</div>
-  <div class="bar"><b>CAS Activities Finder</b> <u>Find projects</u> Create project · My projects · My CAS record <span class="r">Name (student) [Log out]</span></div>
+  <div class="bar"><b>CAS Activities Finder</b> <u>Find projects</u> Create project · My projects · My CAS record <span class="r">Aarav Shah (student, GMIS) [Log out]</span></div>
   <div class="pad">
-    <div class="box">Keywords <span class="in">beach, football…</span> Strand <span class="in">▼ All</span> Schools <span class="in">▼ Mine + interschool</span> ☑ still open <span class="btn">Search</span></div>
+    <div class="box">Keywords <span class="in">ancol, futsal, jakarta selatan…</span> Strand <span class="in">▼ All</span> Schools <span class="in">▼ GMIS + interschool</span> ☑ still open <span class="btn">Search</span></div>
     <i>3 projects found</i>
     <div class="row">
-      <div class="box">[Service] [Interschool]<br><b><u>Project title</u></b><br>School · location<br>dates · hours · fee<br>Apply by … · places left</div>
-      <div class="box">[Activity]<br><b><u>Project title</u></b><br>School · location<br>dates · hours · fee<br>Apply by … · places left</div>
-      <div class="box">[Creativity]<br><b><u>Project title</u></b><br>School · location<br>dates · hours · fee<br>Apply by … · places left</div>
+      <div class="box">[Service] [Interschool]<br><b><u>Ancol Beach Clean-Up</u></b><br>GMIS (Jakarta Pusat) · Pantai Ancol<br>dates · 4 CAS hours · free<br>Apply by … · places left</div>
+      <div class="box">[Activity] [Interschool]<br><b><u>Inter-school Futsal League</u></b><br>Senayan IB (Jakarta Selatan)<br>dates · 20 CAS hours<br>Apply by … · places left</div>
+      <div class="box">[Creativity]<br><b><u>Batik Mural Painting</u></b><br>GMIS (Jakarta Pusat) · Kemayoran<br>dates · 15 CAS hours · Rp 50.000<br>Apply by … · places left</div>
     </div>
-    <div class="note">SC2: best matches first (title match ranks higher) · cards stack in one column on phones</div>
+    <div class="note">SC2: best matches first (title match ranks higher) · searching an area such as "jakarta selatan" works · cards stack on phones</div>
   </div>
 </div>
 
 <div class="frame" id="w3">
   <div class="cap">W3 · Project details (member view and creator view)</div>
-  <div class="bar"><b>CAS Activities Finder</b> nav… <span class="r">[Log out]</span></div>
+  <div class="bar"><b>CAS Activities Finder</b> <span class="x">· Jakarta</span> nav… <span class="r">[Log out]</span></div>
   <div class="pad">
-    <div class="box">[Strand] [status] <h3 style="margin:4px 0">Project title</h3>Description text…<br>
-      Organised by … · location · dates · hours · fee · apply by · places left<br>
+    <div class="box">[Service] [approved] [Interschool] <h3 style="margin:4px 0">Ancol Beach Clean-Up Drive</h3>Collect and sort plastic waste along Ancol beach…<br>
+      Organised by Aarav Shah, GMIS · Pantai Ancol, Jakarta Utara · dates · 4 CAS hours · Free · apply by · places left<br>
       <span class="btn">Join as participant</span><span class="btn">Join as volunteer</span><span class="btn">Join as organizer</span>
       <span class="x">(greyed out when full)</span></div>
     <b>Requests to join</b> <span class="x">(creator / teacher only)</span>
     <table><tr><th>Student</th><th>Role</th><th>Status</th><th></th></tr>
-      <tr><td>Name, ID, school</td><td>volunteer</td><td>pending</td><td><span class="btn">Accept</span><span class="btn">Reject</span></td></tr></table>
+      <tr><td>Rizky Pratama, S1003, GMIS</td><td>volunteer</td><td>pending</td><td><span class="btn">Accept</span><span class="btn">Reject</span></td></tr></table>
     <div class="note">SC4: red message explains refusals (deadline, full, clash…) · SC5: accept re-checks capacity</div>
   </div>
 </div>
 
 <div class="frame" id="w4">
   <div class="cap">W4 · Create project (student)</div>
-  <div class="bar"><b>CAS Activities Finder</b> nav… <span class="r">[Log out]</span></div>
+  <div class="bar"><b>CAS Activities Finder</b> <span class="x">· Jakarta</span> nav… <span class="r">[Log out]</span></div>
   <div class="pad">
-    Title <span class="in" style="width:560px">5-80 characters</span><br>
+    Title <span class="in" style="width:560px">e.g. Mangrove Planting Day (5-80 characters)</span><br>
     Description <div class="in" style="width:640px;height:50px">20-1000 characters</div><br>
-    <div class="row"><div>Strand <span class="in">▼</span></div><div>Location <span class="in"> </span></div><div>Start <span class="in">📅</span></div></div>
+    <div class="row"><div>Strand <span class="in">▼</span></div><div>Location <span class="in">e.g. Angke Kapuk, Jakarta Utara</span></div><div>Start <span class="in">📅</span></div></div>
     <div class="row"><div>End <span class="in">📅</span></div><div>Apply by <span class="in">📅</span></div><div>CAS hours <span class="in">1-200</span></div></div>
-    <div class="row"><div>Fee ₹ <span class="in">0</span></div><div>Participants <span class="in">#</span></div><div>Volunteers / Organizers <span class="in">#</span></div></div>
-    ☐ Open to other IBDP schools<br><span class="btn">Send for approval</span>
+    <div class="row"><div>Fee (Rp) <span class="in">0 = free, max 10.000.000</span></div><div>Participants <span class="in">#</span></div><div>Volunteers / Organizers <span class="in">#</span></div></div>
+    ☐ Open to students of other IBDP schools in Jakarta<br><span class="btn">Send for approval</span>
     <div class="note">SC3: server re-validates everything and lists ALL errors at once · new project = "pending"</div>
   </div>
 </div>
 
 <div class="frame" id="w5">
   <div class="cap">W5 · My CAS record (student)</div>
-  <div class="bar"><b>CAS Activities Finder</b> nav… <span class="r">[Log out]</span></div>
+  <div class="bar"><b>CAS Activities Finder</b> <span class="x">· Jakarta</span> nav… <span class="r">[Log out]</span></div>
   <div class="pad">
-    <h3 style="margin:0">CAS record — Student name</h3><span class="x">ID · school · N completed</span>
+    <h3 style="margin:0">CAS record — Aarav Shah</h3><span class="x">S1001 · Gandhi Memorial International School · 1 completed</span>
     <div class="row"><div class="box">Creativity<br><b>0 h</b></div><div class="box">Activity<br><b>0 h</b></div><div class="box">Service<br><b>3 h</b></div><div class="box">Total<br><b>3 h</b></div></div>
     <table><tr><th>Project</th><th>Strand</th><th>Role</th><th>School</th><th>Start</th><th>Status</th><th>Hours</th></tr>
-      <tr><td>…</td><td>…</td><td>participant</td><td>…</td><td>…</td><td>completed</td><td>3</td></tr>
-      <tr><td>…</td><td>…</td><td>organizer</td><td>…</td><td>…</td><td>ongoing</td><td>–</td></tr></table>
+      <tr><td>Panti Werdha Visit</td><td>Service</td><td>participant</td><td>GMIS</td><td>…</td><td>completed</td><td>3</td></tr>
+      <tr><td>Inter-school Futsal League</td><td>Activity</td><td>organizer</td><td>Senayan IB</td><td>…</td><td>ongoing</td><td>–</td></tr></table>
     <span class="btn">Print / save as PDF</span>
     <div class="note">SC8: hours only from completed projects · print hides navigation</div>
   </div>
@@ -99,15 +99,15 @@
 
 <div class="frame" id="w6">
   <div class="cap">W6 · Teacher, principal and service-provider screens (same table pattern)</div>
-  <div class="bar"><b>CAS Activities Finder</b> Approvals &amp; progress · Browse <span class="r">[Log out]</span></div>
+  <div class="bar"><b>CAS Activities Finder</b> Approvals &amp; progress · Browse <span class="r">Mr. Vikram Mehta (teacher, GMIS) [Log out]</span></div>
   <div class="pad">
     <b>Teacher:</b>
     <table><tr><th>Project / creator</th><th>Status</th><th>Dates</th><th>Members</th><th>Apply by</th><th>Action</th></tr>
-      <tr><td>Title<br>by …</td><td>pending</td><td>…</td><td>0</td><td><span class="in">📅</span><span class="btn">Save</span></td><td><span class="btn">Approve</span><span class="btn">Reject</span></td></tr>
-      <tr><td>Title</td><td>approved</td><td>…</td><td>3</td><td><span class="in">📅</span><span class="btn">Save</span></td><td><span class="btn">Mark started</span></td></tr></table>
-    <p><b>Principal:</b> add form [ID] [Name] [▼ student/teacher] (Add) + table ID · name · role · activated · (Remove)</p>
-    <p><b>Service provider:</b> add form [School] [City] (Add) + table school · city · principal · students · [ID][Name](Assign principal) · (Remove)</p>
-    <div class="note">SC6: only the next valid stage is offered · SC7: remove asks for confirmation</div>
+      <tr><td>Coding Club for Juniors<br>by Rizky Pratama</td><td>pending</td><td>…</td><td>0</td><td><span class="in">📅</span><span class="btn">Save</span></td><td><span class="btn">Approve</span><span class="btn">Reject</span></td></tr>
+      <tr><td>Batik Mural Painting</td><td>approved</td><td>…</td><td>3</td><td><span class="in">📅</span><span class="btn">Save</span></td><td><span class="btn">Mark started</span></td></tr></table>
+    <p><b>GMIS principal:</b> add form [ID] [Name] [▼ student/teacher] (Add) + table ID · name · role · activated · (Remove)</p>
+    <p><b>Service provider:</b> add form [School] [▼ Area: Jakarta Pusat/Utara/Barat/Selatan/Timur, Bogor, Depok, Tangerang, Bekasi] (Add) + table school · area · principal · students · [ID][Name](Assign principal) · (Remove)</p>
+    <div class="note">SC6: only the next valid stage is offered · SC7: remove asks for confirmation; area must be in Jabodetabek</div>
   </div>
 </div>
 

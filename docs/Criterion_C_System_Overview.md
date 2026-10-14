@@ -4,7 +4,7 @@
 
 ## C1. System model
 
-The product is a three-tier JavaScript web application (Figure C1). The browser shows a single page whose screens are drawn by `app.js`. The Express server authenticates each request, applies the rules, and is the only tier that touches the SQLite database (Figure C2). Rules are kept in pure-function modules (Figure C3) so that each one can be tested on its own.
+The product is a three-tier JavaScript web application (Figure C1). It is designed for IBDP schools in Jakarta, starting with GMIS. The browser shows a single page whose screens are drawn by `app.js`. The Express server authenticates each request, applies the rules, and is the only tier that touches the SQLite database (Figure C2). Rules are kept in pure-function modules (Figure C3) so that each one can be tested on its own.
 
 ![Figure C1 – Architecture](images/c1-architecture.png)
 *Figure C1: Architecture, modules and API route groups.*
@@ -91,16 +91,16 @@ There are three levels of testing: unit tests on the algorithm functions, HTTP i
 |---|---|---|---|---|
 | T01 | 3 | N/B/I | 2028-02-29; 2026-02-30; 14/10/2026 | valid; invalid; invalid |
 | T02 | 4 | B | ranges touching on one day; next day | clash; none |
-| T03–06 | 3 | B/I | title 4/5/80/81 chars; deadline yesterday/today/after start; hours 0/4.5/200; empty form | limits accepted; others refused; all errors listed |
+| T03–06 | 3 | B/I | title 4/5/80/81 chars; deadline yesterday/today/after start; hours 0/4.5/200; fee Rp 10.000.000/10.000.001; empty form | limits accepted; others refused; all errors listed |
 | T07, T15 | 1 | B/I | 8-char password; `Pass1`; unknown ID; second activation | accepted; refused |
 | T16 | 1 | I | wrong password vs unknown ID | identical 401; only salt:hash stored |
-| T08–10, T18 | 2 | N/I | `CLEAN`, `cafe`, `clean-up!!`, `skydiving`, blank | title match first; matched; none; all |
+| T08–10, T18 | 2 | N/I | `CLEAN`, `cafe`, `clean-up!!`, `jakarta selatan`, `skydiving`, blank | title match first; matched; Senayan futsal only; none; all |
 | T28–29 | 2 | extreme | 2,000 projects (HTTP); 20,000 (function) | < 1 s; < 0.5 s |
 | T19–20 | 3 | N/I | valid project; 2 bad fields; 60 KB body | pending and hidden; 2 errors; 413 |
 | T11–12, T22 | 4 | B/I | on/after deadline; last place/full; duplicate; own; clash; hidden | only valid cases accepted, with reasons |
 | T23 | 5 | B/I | 2 requests, 1 place; non-creator decides | second refused; 404 |
 | T13, T21 | 6 | I | skip a stage; reject without reason; complete early | refused |
-| T25–26 | 7 | N/I | add duplicate ID; remove student; replace principal | 409; old cookie 401; old principal refused |
+| T25–26 | 7 | N/I | add duplicate ID; remove student; replace principal; school area `Mumbai` | 409; old cookie 401; old principal refused; 400 |
 | T14, T24 | 8 | N/B | completed + ongoing; new student | completed hours only; empty |
 | T17, UI | 9 | I | cross-role calls; title `<img onerror=…>` | 401/403; shown as text |
 | T27 | 10 | N | restart server on the same file | data and login kept |

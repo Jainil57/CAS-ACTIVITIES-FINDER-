@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const { startTestServer } = require('./helpers');
 const { searchProjects } = require('../src/search');
 
-const WORDS = ['beach', 'mural', 'robotics', 'football', 'tutoring', 'choir', 'garden', 'charity', 'drama', 'yoga'];
+const WORDS = ['beach', 'mural', 'robotics', 'futsal', 'tutoring', 'choir', 'garden', 'charity', 'drama', 'yoga'];
 const STRANDS = ['Creativity', 'Activity', 'Service'];
 
 test('T28 (SC2) search over 2,000 projects responds in under 1 second', async () => {
@@ -13,7 +13,7 @@ test('T28 (SC2) search over 2,000 projects responds in under 1 second', async ()
   try {
     const insert = t.db.prepare(`INSERT INTO projects (title, description, strand, school_id, creator_id, interschool, location,
       start_date, end_date, apply_deadline, hours, cap_participant, cap_volunteer, cap_organizer, status, created_at)
-      VALUES (?, ?, ?, ?, ?, 1, 'Mumbai', '2026-12-01', '2026-12-02', '2026-11-20', 5, 10, 2, 1, 'approved', '2026-10-01')`);
+      VALUES (?, ?, ?, ?, ?, 1, 'Jakarta', '2026-12-01', '2026-12-02', '2026-11-20', 5, 10, 2, 1, 'approved', '2026-10-01')`);
     t.db.exec('BEGIN');
     for (let i = 0; i < 2000; i += 1) {
       const word = WORDS[i % WORDS.length];
