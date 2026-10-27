@@ -85,22 +85,24 @@ EVERY REQUEST:           user ← session WHERE token = cookie AND not expired A
 
 ## C4. Testing strategy
 
-There are three levels of testing: unit tests on the algorithm functions, HTTP integration tests on a fresh seeded database with the date fixed at 2026-10-01, and UI tests in Chromium. Every SC has normal (N), boundary (B) and invalid (I) cases.
+**Structural tests** call each algorithm directly. **Functional tests** use the running app through HTTP, one or more per success criterion. Each covers valid, extreme and invalid data. All tests are automated with Node's test runner, and the observed results are recorded in D4.
 
-| Test | SC | Type | Input | Expected |
-|---|---|---|---|---|
-| T01 | 3 | N/B/I | 2028-02-29; 2026-02-30; 14/10/2026 | valid; invalid; invalid |
-| T02 | 4 | B | ranges touching on one day; next day | clash; none |
-| T03–06 | 3 | B/I | title 4/5/80/81 chars; deadline yesterday/today/after start; hours 0/4.5/200; fee Rp 10.000.000/10.000.001; empty form | limits accepted; others refused; all errors listed |
-| T07, T15 | 1 | B/I | 8-char password; `Pass1`; unknown ID; second activation | accepted; refused |
-| T16 | 1 | I | wrong password vs unknown ID | identical 401; only salt:hash stored |
-| T08–10, T18 | 2 | N/I | `CLEAN`, `cafe`, `clean-up!!`, `jakarta selatan`, `skydiving`, blank | title match first; matched; Senayan futsal only; none; all |
-| T28–29 | 2 | extreme | 2,000 projects (HTTP); 20,000 (function) | < 1 s; < 0.5 s |
-| T19–20 | 3 | N/I | valid project; 2 bad fields; 60 KB body | pending and hidden; 2 errors; 413 |
-| T11–12, T22 | 4 | B/I | on/after deadline; last place/full; duplicate; own; clash; hidden | only valid cases accepted, with reasons |
-| T23, T30 | 5 | B/I | 2 requests, 1 place (one after another, then at the same moment); non-creator decides | second refused; 404 |
-| T13, T21 | 6 | I | skip a stage; reject without reason; complete early | refused |
-| T25–26 | 7 | N/I | add duplicate ID; remove student; replace principal; school area `Mumbai` | 409; old cookie 401; old principal refused; 400 |
-| T14, T24 | 8 | N/B | completed + ongoing; new student | completed hours only; empty |
-| T17, UI | 9 | I | cross-role calls; title `<img onerror=…>` | 401/403; shown as text |
-| T27 | 10 | N | restart server on the same MySQL database | data and login kept |
+| ID / SC | Input / test step | Expected result | Type |
+|---|---|---|---|
+| T01 / SC3 | dates 2028-02-29; 2026-02-30; "14/10/2026" | valid; rejected; rejected | Structural, valid/invalid |
+| T02 / SC4 | two ranges sharing one day; ranges touching the next day | clash; no clash | Structural, extreme |
+| T04–05 / SC3 | title 5 and 80 chars; 4 and 81 chars; deadline today; yesterday | accepted; rejected; accepted; rejected | Structural, extreme |
+| T06 / SC3 | hours 4.5; fee Rp 10.000.001; empty form | rejected; rejected; every error listed | Structural, invalid |
+| T08 / SC2 | search "CLEAN"; "cafe" for "Café" | title match ranked first; accent ignored | Structural, valid |
+| T12 / SC4 | apply on deadline day; one day late; last place; full role | accepted; refused; accepted; refused | Structural, extreme |
+| T16 / SC1 | wrong password; unknown ID | same 401 message; only a hash stored | Functional, invalid |
+| T18 / SC2 | GMIS student searches; "jakarta selatan" | own and interschool projects only; Senayan futsal | Functional, valid |
+| T19 / SC3 | submit a project, then search as another student | saved as pending and not shown | Functional, valid |
+| T21 / SC6 | complete a pending project; reject without a reason | refused | Functional, invalid |
+| T22 / SC4 | join own project; pending project; clashing dates | refused with a reason | Functional, invalid |
+| T30 / SC5 | two acceptances for the last place at the same moment | only one accepted | Functional, extreme |
+| T24 / SC8 | record with completed and ongoing projects | only completed hours counted | Functional, valid |
+| T25 / SC7 | principal removes a student, who then logs in | login refused | Functional, invalid |
+| T17 / SC9 | student calls a teacher route; title `<img onerror>` | 403; shown as text | Functional, invalid |
+| T27 / SC10 | restart the server | data and login kept | Functional, valid |
+| T28 / SC2 | search among 2,000 projects | under 1 second | Functional, extreme |

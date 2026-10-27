@@ -2,9 +2,9 @@
 
 ## A1. The problem
 
-At Gandhi Memorial International School (GMIS), Jakarta, CAS opportunities are shared through WhatsApp groups and posters. Students miss projects, organizers struggle to find volunteers, and changed dates or fees don't reach everyone. Jakarta's IBDP schools also run interschool activities, but there is no shared place to find them and no single record of each student's CAS activities.
+At Gandhi Memorial International School (GMIS), Jakarta, CAS opportunities are shared through WhatsApp groups and posters. Messages get buried, so students miss projects, organizers can't find volunteers, and changes don't reach everyone. There is no shared place to find interschool activities, and no record of each student's CAS hours.
 
-The users are IBDP students (participants, volunteers, organizers), CAS supervisors, the principal, and a service provider running the platform for several schools.
+The users are IBDP students (participants, volunteers, organizers), CAS supervisors, principals, and a service provider that runs the platform for several schools. It must be free, work on laptops and phones, and keep each school's data private.
 
 ## A2. Success criteria
 
@@ -23,4 +23,6 @@ The users are IBDP students (participants, volunteers, organizers), CAS supervis
 
 ## A3. Computational context
 
-The solution is a web application, so users only need a browser. JavaScript is used for both the server (Node.js with Express) and the browser, so one language and one data format (JSON) cover the whole system. MySQL stores the data because many users can use it at once, and its foreign keys, UNIQUE constraints and transactions keep the data correct, for example by stopping two people from taking the last place (SC5).
+A web application suits the problem because users only need a browser. JavaScript (Node.js and Express) runs on both server and browser, so one language and one data format (JSON) cover the whole system. Java, my first idea, or Python with Flask would add a second language.
+
+MySQL stores the data. A Google Form cannot enforce rules such as capacity limits, and SQLite allows only one writer at a time. MySQL supports many users at once, constraints, and transactions that stop two people taking the last place (SC5).

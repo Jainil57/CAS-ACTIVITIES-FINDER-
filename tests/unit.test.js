@@ -97,6 +97,7 @@ test('T09 (SC2) search: filters by strand, school scope and open deadline', () =
 
 test('T10 (SC2) search: no match, empty list and odd input are handled safely', () => {
   assert.deepEqual(searchProjects(sample, { query: 'skydiving', schoolId: 1, today: TODAY }), []);
+  assert.deepEqual(searchProjects(sample, { query: 'beech', schoolId: 1, today: TODAY }), []);   // a typo finds nothing (limitation)
   assert.deepEqual(searchProjects([], { query: 'beach', schoolId: 1, today: TODAY }), []);
   assert.equal(searchProjects(sample, { query: '   ', schoolId: 1, today: TODAY }).length, 3);
   assert.equal(normalise(null), '');

@@ -1,37 +1,27 @@
 # Criterion D: Development
 
-*CAS Activities Finder · full source code in the Appendix · test IDs refer to Criterion C4*
+*Full source code is in the Appendix. Test IDs refer to Criterion C4.*
 
 ## D1. Functionality
 
-All ten success criteria work and are shown in the video. The 30 automated tests all pass (Figure D1).
+All ten success criteria work and are shown in the video. All 30 automated tests pass (Figure D1).
 
 | SC | Evidence | Tests |
 |---|---|---|
 | 1 | [login](images/ui-01-login.png) | T07, T15–16 |
-| 2 | [browse](images/ui-02-browse.png), [search](images/ui-03-search.png) | T08–10, T18, T28–29 |
+| 2 | [search](images/ui-03-search.png) | T08–10, T18, T28–29 |
 | 3 | [refused form](images/ui-06-create-invalid.png), [pending](images/ui-07-my-projects.png) | T01, T03–06, T19–20 |
 | 4 | [joined](images/ui-04-joined.png), [clash](images/ui-05-clash.png) | T02, T11–12, T22 |
 | 5 | [requests](images/ui-08-requests.png) | T23, T30 |
-| 6 | [teacher](images/ui-10-teacher.png) | T13, T21 |
+| 6 | [supervisor](images/ui-10-teacher.png) | T13, T21 |
 | 7 | [principal](images/ui-11-principal.png), [admin](images/ui-12-admin.png) | T25–26 |
 | 8 | [CAS record](images/ui-09-cas-record.png) | T14, T24 |
-| 9 | [phone layout](images/ui-13-mobile.png) | T17, UI |
-| 10 | restart in video | T27 |
+| 9 | [phone layout](images/ui-13-mobile.png) | T17 |
+| 10 | restart shown in video | T27 |
 
-## D2. Techniques
+## D2. Implementing the algorithms
 
-### 1. MySQL database with constraints, parameterised SQL and transactions
-
-```js
-role ENUM('participant', 'volunteer', 'organizer') NOT NULL,
-UNIQUE (project_id, user_id)                                             // db.js — MEMBERSHIPS
-db.prepare('SELECT status FROM memberships WHERE project_id = ? AND user_id = ?').get(project.id, req.user.id)
-```
-
-Students and projects have a many-to-many relationship, so a linking table was needed (Figure C2). The `ENUM` and `UNIQUE` constraints repeat the JavaScript rules inside the database, so a missed check in a route still can't store a duplicate or an invalid value. The `?` placeholders make all input data rather than SQL, which prevents injection.
-
-### 2. Normalised partial matching with weighted ranking (Algorithm 1)
+### 1. Search and ranking (Algorithm 1, Appendix `src/search.js`)
 
 ```js
 if (title.includes(word)) score += 3;
@@ -40,9 +30,9 @@ else return 0;
 results.sort((a, b) => b.score - a.score || a.start_date.localeCompare(b.start_date));
 ```
 
-`normalise()` lower-cases text, strips accents using Unicode NFD, and replaces punctuation, so `CLEAN`, `cafe` and `clean-up!!` all match (T08). When two scores tie, `b.score - a.score` is 0, so `||` falls through to the start date. SQL removes what the user may not see; JavaScript ranks, which `LIKE` can't do.
+`normalise()` lower-cases text and strips accents and punctuation, so "CLEAN", "cafe" and "clean-up!!" all match (T08). When two scores tie, `b.score - a.score` is 0, so `||` falls through to the start date. SQL first removes projects the user may not see. JavaScript then ranks the rest, because SQL `LIKE` can match words but cannot weight title matches.
 
-### 3. Ordered rules and conflict detection (Algorithm 2)
+### 2. Join rules and clash detection (Algorithm 2, Appendix `src/joinRules.js`)
 
 ```js
 const capacity = project[`cap_${role}`];
@@ -50,71 +40,49 @@ if ((counts[role] || 0) >= capacity) return { ok: false, status: 409, reason: `T
 const clash = findClash(schedule, project);          // startA <= endB && startB <= endA
 ```
 
-`checkJoinRequest` is pure: it takes data in and returns `{ok, status, reason}`, so all eight rules are unit-tested without a server (T11–12). The computed property `` cap_${role} `` replaces three near-identical branches. `findClash` is reused when a creator accepts a request, because the student may have committed elsewhere in the meantime.
+`checkJoinRequest` is a pure function: data goes in and `{ok, status, reason}` comes out. That let me test all eight rules without a server (T11–12). Building the column name from the role (`cap_${role}`) avoids three near-identical `if` statements.
 
-### 4. State machine as a lookup table (Algorithm 3)
-
-```js
-const TRANSITIONS = { pending: ['approved', 'rejected'], approved: ['ongoing'], ongoing: ['completed'], rejected: [], completed: [] };
-const canMove = (from, to) => (TRANSITIONS[from] || []).includes(to);
-```
-
-The table mirrors Figure C6 directly, and adding a state takes one line.
-
-### 5. Hashed passwords, sessions and higher-order middleware
+### 3. Accepting inside a locked transaction (SC5, Appendix `src/routes/projectRoutes.js`)
 
 ```js
-const hash = crypto.scryptSync(password, salt, 64).toString('hex');
-return crypto.timingSafeEqual(actual, expected);
-function requireRole(...roles) { return (req, res, next) => { /* 401 / 403 / next() */ }; }
+await db.transaction(async (tx) => {
+  const request = await tx.get(`SELECT ... WHERE m.id = ? FOR UPDATE`, id);
+  // re-check places and clashes, then UPDATE memberships
+});
 ```
 
-`requireRole` returns a function, so `router.use(requireRole('teacher'))` protects a whole route file. Cookies are `httpOnly` and `sameSite: 'strict'`. The same login error for an unknown ID and a wrong password hides which IDs exist (T16).
+MySQL serves requests at the same time, so two creators clicking Accept together could both see one free place. `FOR UPDATE` locks the row until the transaction ends, and the capacity and clash checks run again inside it.
 
-### 6. Validation that reports every error
+### 4. Life-cycle table (Algorithm 3, Appendix `src/statusFlow.js`)
 
-```js
-return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === text;   // rejects 2026-02-30
-```
+`TRANSITIONS` lists each status's allowed next states, and `canMove(from, to)` checks the list. It matches Figure C6 exactly, so the code and the design can't drift apart.
 
-JavaScript silently rolls 30 February over to 2 March, so converting the date back to text exposes impossible dates. `validateProject` collects all errors, so a student fixes the form in one attempt. School areas are checked against a fixed list of Jabodetabek areas, and fees against a Rupiah limit. The server re-checks everything: with the browser's checks disabled, the bad form was still refused.
+### 5. Security and validation (Appendix `src/auth.js`, `src/validation.js`)
 
-### 7. Asynchronous requests and output escaping
+Passwords are stored as `salt:scrypt(password)`. Every route is protected by `requireRole(...)`, which returns 401 or 403. All SQL uses `?` placeholders, which stops SQL injection. User text is escaped before it is shown. `validateProject` collects every error at once, and a date is valid only if converting it back to text gives the same date (this rejects 2026-02-30).
 
-```js
-const response = await fetch(url, options);
-if (!response.ok) throw new Error(data.error || `Request failed (${response.status})`);
-const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (ch) => map[ch]);
-```
+## D3. Decisions and alternatives
 
-All screens use one `api()` helper, so the server's reason always reaches the user. Fees are shown in Indonesian format with `toLocaleString('id-ID')` (Rp 50.000), and dates use local WIB time instead of UTC. Text written by users passes through `esc()`, so a project titled `<img src=x onerror=alert(1)>` displays as plain text ([screenshot](images/ui-10-teacher.png)).
-
-### 8. Dependency injection
-
-`createApp(db, { today })` receives its database and clock. Tests pass an in-memory database and a fixed date, so the date rules give the same result on every run.
-
-## D3. Evaluation of decisions
-
-| Decision | Strength | Limitation |
+| Decision | Alternative rejected | Why |
 |---|---|---|
-| JavaScript on both tiers (originally planned: Java) | one language, native JSON, shared helpers | no compile-time types, so the tests had to catch type errors |
-| MySQL | handles many users at once; constraints, joins, transactions | must be installed and running; the login is set in `config.js` |
-| Transaction with `SELECT … FOR UPDATE` when accepting | locks the project row, so two acceptances can't both take the last place (T30) | the second request waits briefly for the lock |
-| Soft delete | CAS history kept; reversible | an ID can't be reused |
-| Sessions in the database | survive restarts (T27); removal logs out instantly | one query per request |
-| No front-end framework | no build step; every line is explainable | whole screens re-render; some repeated wiring |
+| Rank results in JavaScript | SQL `LIKE` only | `LIKE` cannot rank title matches higher |
+| Row lock in a transaction | Check, then update | overbooking under simultaneous requests (T30) |
+| Soft delete (`is_active = 0`) | Delete rows | keeps students' CAS history; can be undone |
+| Sessions stored in MySQL | Sessions in memory | logins survive restarts (T27) |
+| Plain JavaScript screens | React | no build step, and I can explain every line; but whole screens redraw |
 
 ## D4. Testing
 
 ![Figure D1 – test run](images/d1-test-run.png)
-*Figure D1: `npm test` output.*
+*Figure D1: `npm test` output: 30 passed, 0 failed.*
 
-**Correctness.** Each algorithm was unit-tested with normal, boundary and invalid data, then every route was tested end-to-end over HTTP.
+| Test | Input | Expected | Observed | Outcome | Fix / notes |
+|---|---|---|---|---|---|
+| T05 | deadline = today; yesterday | accepted; rejected | accepted; rejected | Pass | – |
+| T12 | last free place; role full | accepted; refused | accepted; refused | Pass | – |
+| T22 | join a pending project | 404 (hidden) | 409 "not open" | Fail, then Pass | revealed hidden projects; now returns 404 |
+| T30 | two acceptances at once, one place | one accepted | without lock: both accepted in 4 of 5 runs | Fail, then Pass | added `FOR UPDATE` lock |
+| T17 | student calls teacher route | 403 | 403 | Pass | – |
+| T28 | search among 2,006 projects | < 1 s | 87 ms | Pass | – |
 
-**Reliability.** Each test gets its own server and database, so test order can't matter. The suite also covers malformed JSON, oversized bodies, empty records, stale cookies and restarts.
-
-**Efficiency.** Searching 2,006 projects took 87 ms over HTTP (including the MySQL query). The algorithm alone took 112 ms for 20,000 projects: an O(n) scan plus an O(k log k) sort of the k matches.
-
-**Defect found.** T22 failed at first because joining a *pending* project returned 409 "not open", which revealed that the hidden project existed. Pending and rejected projects now return 404, and T12 covers both cases. T30 sends two acceptances for the last place at the same moment. Without the row lock it failed 4 out of 5 runs (both were accepted); with the lock it passes every time.
-
-**Justification.** Every success criterion has automated tests, and every exit in Figure C4 has an assertion. One gap remains: there was no long-term trial with real students, which Criterion E addresses.
+**Effectiveness.** Each success criterion has at least one functional test. Each algorithm also has structural tests with valid, extreme and invalid data. Each test runs on a fresh database, so the results are repeatable. Two real defects (T22 and T30) were found by tests and not by clicking through the app, which shows the strategy worked. Its limits are that it did not test usability with real students, and it tested performance only up to 2,006 projects on one laptop.
